@@ -38,6 +38,7 @@ import io.ikws4.codeeditor.core.completion.SuggestionAdapter;
 import io.ikws4.codeeditor.core.completion.SugguestionTokenizer;
 import io.ikws4.codeeditor.core.span.ReplacedSpan;
 import io.ikws4.codeeditor.core.span.SyntaxHighlightSpan;
+import io.ikws4.codeeditor.core.span.TabSpan;
 import io.ikws4.codeeditor.core.task.FormatTask;
 import io.ikws4.codeeditor.core.task.SyntaxHighlightTask;
 import io.ikws4.codeeditor.language.Language;
@@ -658,19 +659,6 @@ public class CodeEditor extends AppCompatMultiAutoCompleteTextView {
     }
 
 
-    //********************
-    //* Section - helper *
-    //********************
-    public void markAsReplacedSpan(int start, int end, String original) {
-        int len = original.length();
-        char[] orig = new char[len];
-        original.getChars(0, len, orig, 0);
-
-        getText().setSpan(new ReplacedSpan(orig), start, end,
-                Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
-    }
-
-
     //*************************************************************************
     //* Section - content & selction operation
     //*************************************************************************
@@ -750,8 +738,10 @@ public class CodeEditor extends AppCompatMultiAutoCompleteTextView {
 
         String tab = mConfiguration.getIndentation().get(level);
         int start = getLayout().getLineStart(line);
+
         text.insert(start, tab);
-        markAsReplacedSpan(start, getSelectionEnd(), "");
+
+        text.setSpan(new TabSpan(), start, getSelectionEnd(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
     }
 
 
