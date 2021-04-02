@@ -43,6 +43,7 @@ import io.ikws4.codeeditor.core.task.FormatTask;
 import io.ikws4.codeeditor.core.task.SyntaxHighlightTask;
 import io.ikws4.codeeditor.language.Language;
 import io.ikws4.codeeditor.language.java.JavaLanguage;
+import io.ikws4.codeeditor.language.treesitter.TSLanguageStyler;
 
 public class CodeEditor extends AppCompatMultiAutoCompleteTextView {
     // load jsitter for syntax highlight and indent.
@@ -644,6 +645,10 @@ public class CodeEditor extends AppCompatMultiAutoCompleteTextView {
         return hasLayout() ? getLayout().getLineForVertical(getScrollY() + getHeight()) : 0;
     }
 
+    /**
+     * If line is blank means it only have blank character like space, tab etc.
+     * @see Character#isWhitespace(char)
+     */
     private boolean isBlankLine(int line) {
         if (line < 0) return true;
         int start = getLayout().getLineStart(line);
@@ -656,6 +661,17 @@ public class CodeEditor extends AppCompatMultiAutoCompleteTextView {
             start++;
         }
         return true;
+    }
+
+    /**
+     * @return the previous non blank line
+     */
+    private int getPrevnonblankLine() {
+        int line = getCurrentLine();
+        while (!isBlankLine(line)) {
+            line--;
+        }
+        return line;
     }
 
 
@@ -725,22 +741,18 @@ public class CodeEditor extends AppCompatMultiAutoCompleteTextView {
         mFormatTask.execute();
     }
 
+    /**
+     * Indent by given line
+     * @see TSLanguageStyler#getIndentLevel(String, int, int)
+     */
     private void indent(int line) {
         Editable text = getText();
         int currentLine = getCurrentLine();
-        int prevnonblankLine = currentLine;
-
-        while (!isBlankLine(prevnonblankLine)) {
-            prevnonblankLine--;
-        }
-
-        int level = mLanguage.getStyler().getIndentLevel(text.toString(),  currentLine, prevnonblankLine);
-
+        int level = mLanguage.getStyler().getIndentLevel(text.toString(),  currentLine, getPrevnonblankLine());
         String tab = mConfiguration.getIndentation().get(level);
+
         int start = getLayout().getLineStart(line);
-
         text.insert(start, tab);
-
         text.setSpan(new TabSpan(), start, getSelectionEnd(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
     }
 
