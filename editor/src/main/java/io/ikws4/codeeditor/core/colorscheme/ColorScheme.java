@@ -1,0 +1,34 @@
+package io.ikws4.codeeditor.core.colorscheme;
+
+import androidx.annotation.ColorInt;
+
+public interface ColorScheme {
+    @ColorInt
+    int getBackgroundColor();
+
+    @ColorInt
+    int getTextColor();
+
+    @ColorInt
+    int getGutterColor();
+
+    @ColorInt
+    int getGutterDividerColor();
+
+    @ColorInt
+    int getGutterTextColor();
+
+    @ColorInt
+    int getGutterActiveTextColor();
+
+    @ColorInt
+    int getCursorLineColor();
+
+    @ColorInt
+    int getSelectionColor();
+
+    int getCompletionMenuBackgroundColor();
+
+    SyntaxColorScheme getSyntaxColorScheme();
+}
+

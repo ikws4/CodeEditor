@@ -1,0 +1,25 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!-- Base application theme. -->
+    <style name="Theme.CodeEditor" parent="Theme.MaterialComponents.NoActionBar">
+        <!-- Primary brand color. -->
+        <item name="colorPrimary">@color/nord1</item>
+        <item name="colorPrimaryVariant">@color/nord2</item>
+        <item name="colorOnPrimary">@color/nord6</item>
+        <!-- Secondary brand color. -->
+        <item name="colorSecondary">@color/nord1</item>
+        <item name="colorSecondaryVariant">@color/nord2</item>
+        <item name="colorOnSecondary">@color/nord6</item>
+        <!-- Status bar color. -->
+        <item name="android:statusBarColor" tools:targetApi="l">?attr/colorPrimary</item>
+
+        <!-- ActionMode -->
+        <item name="windowActionModeOverlay">true</item>
+        <item name="actionModeStyle">@style/Widget.App.ActionMode</item>
+        <item name="actionModeCloseDrawable">@drawable/ic_close_24dp</item>
+        <item name="actionBarTheme">@style/ThemeOverlay.MaterialComponents.Dark.ActionBar</item>
+
+        <!-- CursorHandle -->
+        <item name="colorControlActivated">@color/nord7</item>
+
+    </style>
+</resources>

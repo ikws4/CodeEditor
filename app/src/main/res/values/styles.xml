@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Widget.App.ActionMode" parent="Widget.AppCompat.ActionMode" >
+        <item name="titleTextStyle">?attr/textAppearanceHeadline6</item>
+        <item name="subtitleTextStyle">?attr/textAppearanceSubtitle1</item>
+        <item name="background">?attr/colorPrimary</item>
+    </style>
+</resources>

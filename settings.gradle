@@ -1,0 +1,4 @@
+include ':jsitter'
+include ':editor'
+include ':app'
+rootProject.name = "CodeEditor"
