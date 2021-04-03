@@ -48,6 +48,11 @@ public class DarculaColorScheme implements ColorScheme {
     }
 
     @Override
+    public int getIndentColor() {
+        return 0xFF606060;
+    }
+
+    @Override
     public SyntaxColorScheme getSyntaxColorScheme() {
         return new SyntaxColorScheme() {
             @Override

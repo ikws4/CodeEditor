@@ -2,7 +2,10 @@ package io.ikws4.codeeditor.core;
 
 import android.content.Context;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.Point;
+import android.graphics.Rect;
 import android.graphics.Typeface;
 import android.graphics.drawable.ColorDrawable;
 import android.os.Build;
@@ -24,7 +27,9 @@ import android.view.MotionEvent;
 import android.view.ScaleGestureDetector;
 import android.view.inputmethod.EditorInfo;
 import android.view.textclassifier.TextClassifier;
+import android.widget.HorizontalScrollView;
 import android.widget.OverScroller;
+import android.widget.ScrollView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -242,10 +247,10 @@ public class CodeEditor extends AppCompatMultiAutoCompleteTextView {
         setLineSpacing(0, 1.1f);
         setGravity(Gravity.TOP | Gravity.START);
         setImeOptions(EditorInfo.IME_FLAG_NO_EXTRACT_UI);
-        setInputType(EditorInfo.TYPE_CLASS_TEXT |
-                EditorInfo.TYPE_TEXT_FLAG_NO_SUGGESTIONS |
-                EditorInfo.TYPE_TEXT_FLAG_MULTI_LINE |
-                EditorInfo.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD);
+        setInputType(EditorInfo.TYPE_CLASS_TEXT
+                | EditorInfo.TYPE_TEXT_FLAG_NO_SUGGESTIONS
+                | EditorInfo.TYPE_TEXT_FLAG_MULTI_LINE
+                | EditorInfo.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD);
         addTextChangedListener(mSyntaxTreeEditTextWatcher);
         addTextChangedListener(mSyntaxHighlightTextWatcher);
         setIncludeFontPadding(false);
@@ -377,7 +382,6 @@ public class CodeEditor extends AppCompatMultiAutoCompleteTextView {
         int maxY = getLayout().getHeight() - getHeight() + getPaddingTop() + getPaddingBottom();
         mScroller.forceFinished(true);
         mScroller.fling(getScrollX(), getScrollY(), velocityX, velocityY, 0, maxX, 0, maxY);
-        postInvalidateOnAnimation();
     }
 
     //******************
@@ -753,7 +757,7 @@ public class CodeEditor extends AppCompatMultiAutoCompleteTextView {
 
         int start = getLayout().getLineStart(line);
         text.insert(start, tab);
-        text.setSpan(new TabSpan(), start, getSelectionEnd(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        text.setSpan(new TabSpan(tab, mConfiguration.getColorScheme().getIndentColor()), start, getSelectionEnd(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
     }
 
 

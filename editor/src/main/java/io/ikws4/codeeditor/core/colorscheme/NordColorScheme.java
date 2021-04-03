@@ -46,6 +46,11 @@ public class NordColorScheme implements ColorScheme {
         return 0xFF4C566A;
     }
 
+    @Override
+    public int getIndentColor() {
+        return 0xFF4C566A;
+    }
+
     public SyntaxColorScheme getSyntaxColorScheme() {
         return new SyntaxColorScheme() {
             @Override

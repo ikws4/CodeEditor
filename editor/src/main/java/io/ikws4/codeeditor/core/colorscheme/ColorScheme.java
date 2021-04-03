@@ -27,7 +27,11 @@ public interface ColorScheme {
     @ColorInt
     int getSelectionColor();
 
+    @ColorInt
     int getCompletionMenuBackgroundColor();
+
+    @ColorInt
+    int getIndentColor();
 
     SyntaxColorScheme getSyntaxColorScheme();
 }
