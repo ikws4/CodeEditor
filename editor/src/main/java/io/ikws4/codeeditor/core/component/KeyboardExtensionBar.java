@@ -1,27 +1,20 @@
 package io.ikws4.codeeditor.core.component;
 
-import android.app.Instrumentation;
 import android.content.Context;
-import android.text.method.QwertyKeyListener;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.util.TypedValue;
-import android.view.KeyEvent;
 import android.view.LayoutInflater;
-import android.view.MotionEvent;
-import android.view.View;
-import android.view.inputmethod.BaseInputConnection;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.FrameLayout;
-import android.widget.ImageButton;
 
 import androidx.annotation.Nullable;
-
-import java.util.concurrent.ConcurrentHashMap;
 
 import io.ikws4.codeeditor.R;
 import io.ikws4.codeeditor.core.CodeEditor;
 
 public class KeyboardExtensionBar extends FrameLayout {
+    private boolean mKeyboardVisible;
+
     public KeyboardExtensionBar(Context context) {
         this(context, null);
     }
@@ -37,19 +30,32 @@ public class KeyboardExtensionBar extends FrameLayout {
     }
 
     public void attach(CodeEditor editor) {
+        editor.addEditorKeyboardVisibleListener((visible) -> {
+            mKeyboardVisible = visible;
+        });
+
         setBackgroundColor(editor.getConfiguration().getColorScheme().getBackgroundColor());
 
         KeyboardButton tab = findViewById(R.id.tab);
-        KeyboardButton left = findViewById(R.id.left);
-        KeyboardButton down = findViewById(R.id.down);
         KeyboardButton up = findViewById(R.id.up);
+        KeyboardButton down = findViewById(R.id.down);
+        KeyboardButton left = findViewById(R.id.left);
         KeyboardButton right = findViewById(R.id.right);
         KeyboardButton keyboardToggle = findViewById(R.id.keyboard_toggle);
 
-
-        left.setOnPressedListener(editor::selectionMoveLeft);
-        down.setOnPressedListener(editor::selectionMoveDown);
         up.setOnPressedListener(editor::selectionMoveUp);
+        down.setOnPressedListener(editor::selectionMoveDown);
+        left.setOnPressedListener(editor::selectionMoveLeft);
         right.setOnPressedListener(editor::selectionMoveRight);
+        keyboardToggle.setOnPressedListener(() -> {
+            if (mKeyboardVisible) {
+                editor.hideSoftInput();
+                keyboardToggle.setImageResource(R.drawable.ic_keyboard);
+            } else {
+                editor.showSoftInput();
+                keyboardToggle.setImageResource(R.drawable.ic_keyboard_hide);
+            }
+        });
+
     }
 }

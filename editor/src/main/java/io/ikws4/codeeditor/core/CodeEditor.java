@@ -3,7 +3,6 @@ package io.ikws4.codeeditor.core;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
-import android.graphics.Rect;
 import android.graphics.Typeface;
 import android.graphics.drawable.ColorDrawable;
 import android.os.Build;
@@ -13,7 +12,6 @@ import android.text.Selection;
 import android.text.Spanned;
 import android.text.TextWatcher;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.util.TypedValue;
 import android.view.ActionMode;
 import android.view.GestureDetector;
@@ -23,7 +21,6 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.ScaleGestureDetector;
-import android.view.ViewOverlay;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
 import android.view.textclassifier.TextClassifier;
@@ -36,7 +33,6 @@ import androidx.appcompat.widget.AppCompatMultiAutoCompleteTextView;
 import java.util.ArrayList;
 import java.util.List;
 
-import io.ikws4.codeeditor.R;
 import io.ikws4.codeeditor.core.colorscheme.ColorScheme;
 import io.ikws4.codeeditor.core.completion.SuggestionAdapter;
 import io.ikws4.codeeditor.core.completion.SugguestionTokenizer;
@@ -101,6 +97,9 @@ public class CodeEditor extends AppCompatMultiAutoCompleteTextView {
 
     // KeyListener
     private EditorKeyListener mEditorKeyListener;
+    private final List<EditorKeyboardVisibleListener> mEditorKeyboardVisibleListeners;
+
+    private final InputMethodManager mIMM;
 
     public CodeEditor(@NonNull Context context) {
         this(context, null);
@@ -168,6 +167,9 @@ public class CodeEditor extends AppCompatMultiAutoCompleteTextView {
         };
 
         mEditorKeyListener = new EditorBaseKeyListener();
+        mEditorKeyboardVisibleListeners = new ArrayList<>();
+
+        mIMM = (InputMethodManager) context.getSystemService(Context.INPUT_METHOD_SERVICE);
 
         configure();
         colorize();
@@ -189,6 +191,11 @@ public class CodeEditor extends AppCompatMultiAutoCompleteTextView {
     @Override
     protected void onSizeChanged(int w, int h, int oldw, int oldh) {
         post(this::updateSyntaxHighlight);
+        if (Math.abs(h - oldh) > 100) {
+            for (EditorKeyboardVisibleListener l : mEditorKeyboardVisibleListeners) {
+                l.onChanged(oldh - h > 0);
+            }
+        }
     }
 
     @Override
@@ -770,9 +777,9 @@ public class CodeEditor extends AppCompatMultiAutoCompleteTextView {
     }
 
 
-    //*******************************
-    //* Section - getter and sitter *
-    //*******************************
+    //*****************
+    //* Section - api *
+    //*****************
     public Configuration getConfiguration() {
         return mConfiguration;
     }
@@ -795,5 +802,21 @@ public class CodeEditor extends AppCompatMultiAutoCompleteTextView {
 
     public void setEditorKeyListener(EditorKeyListener editorKeyListener) {
         mEditorKeyListener = editorKeyListener;
+    }
+
+    public void addEditorKeyboardVisibleListener(EditorKeyboardVisibleListener l) {
+        mEditorKeyboardVisibleListeners.add(l);
+    }
+
+    public void removeEditorKeyboardVisibleListener(EditorKeyboardVisibleListener l) {
+        mEditorKeyboardVisibleListeners.remove(l);
+    }
+
+    public void showSoftInput() {
+        mIMM.showSoftInput(this, 0);
+    }
+
+    public void hideSoftInput() {
+        mIMM.hideSoftInputFromWindow(getWindowToken(), 0);
     }
 }
