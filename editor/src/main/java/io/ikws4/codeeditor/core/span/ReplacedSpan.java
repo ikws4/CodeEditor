@@ -1,16 +1,14 @@
 package io.ikws4.codeeditor.core.span;
 
-import android.graphics.Canvas;
-import android.graphics.Paint;
 import android.text.NoCopySpan;
-import android.text.TextPaint;
-import android.text.style.CharacterStyle;
-import android.text.style.MetricAffectingSpan;
-import android.text.style.ReplacementSpan;
+import android.view.KeyEvent;
 
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
+import io.ikws4.codeeditor.core.CodeEditor;
+import io.ikws4.codeeditor.core.EditorBaseKeyListener;
 
+/**
+ * It will be handle in {@link EditorBaseKeyListener#handleReplacedSpan(CodeEditor, int, KeyEvent)}
+ */
 public class ReplacedSpan implements NoCopySpan {
     private final char[] mText;
 

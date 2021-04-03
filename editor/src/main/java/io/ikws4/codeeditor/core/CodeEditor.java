@@ -2,17 +2,13 @@ package io.ikws4.codeeditor.core;
 
 import android.content.Context;
 import android.graphics.Canvas;
-import android.graphics.Color;
 import android.graphics.Paint;
-import android.graphics.Point;
-import android.graphics.Rect;
 import android.graphics.Typeface;
 import android.graphics.drawable.ColorDrawable;
 import android.os.Build;
 import android.text.Editable;
 import android.text.Layout;
 import android.text.Selection;
-import android.text.Spannable;
 import android.text.Spanned;
 import android.text.TextWatcher;
 import android.util.AttributeSet;
@@ -27,9 +23,7 @@ import android.view.MotionEvent;
 import android.view.ScaleGestureDetector;
 import android.view.inputmethod.EditorInfo;
 import android.view.textclassifier.TextClassifier;
-import android.widget.HorizontalScrollView;
 import android.widget.OverScroller;
-import android.widget.ScrollView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -41,7 +35,6 @@ import java.util.List;
 import io.ikws4.codeeditor.core.colorscheme.ColorScheme;
 import io.ikws4.codeeditor.core.completion.SuggestionAdapter;
 import io.ikws4.codeeditor.core.completion.SugguestionTokenizer;
-import io.ikws4.codeeditor.core.span.ReplacedSpan;
 import io.ikws4.codeeditor.core.span.SyntaxHighlightSpan;
 import io.ikws4.codeeditor.core.span.TabSpan;
 import io.ikws4.codeeditor.core.task.FormatTask;
@@ -100,6 +93,9 @@ public class CodeEditor extends AppCompatMultiAutoCompleteTextView {
     private final SuggestionAdapter mSuggestionAdapter;
     private final SugguestionTokenizer mSugguestionTokenizer;
     private final int mCompletionMenuXOffset = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 8, getResources().getDisplayMetrics());
+
+    // KeyListener
+    private EditorKeyListener mEditorKeyListener;
 
     public CodeEditor(@NonNull Context context) {
         this(context, null);
@@ -166,6 +162,8 @@ public class CodeEditor extends AppCompatMultiAutoCompleteTextView {
             }
         };
 
+        mEditorKeyListener = new EditorBaseKeyListener();
+
         configure();
         colorize();
     }
@@ -209,31 +207,19 @@ public class CodeEditor extends AppCompatMultiAutoCompleteTextView {
     }
 
     @Override
+    public boolean onKeyPreIme(int keyCode, KeyEvent event) {
+        return super.onKeyPreIme(keyCode, event);
+    }
+
+    @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
-        Editable text = getText();
-        int start = getSelectionStart();
-        if (keyCode == KeyEvent.KEYCODE_DEL && (event.hasNoModifiers() || event.hasModifiers(KeyEvent.META_ALT_ON))) {
-            ReplacedSpan[] repl = text.getSpans(start - 1, start, ReplacedSpan.class);
-
-            if (repl.length > 0) {
-                int st = text.getSpanStart(repl[0]);
-                int en = text.getSpanEnd(repl[0]);
-                String old = new String(repl[0].getText());
-                text.removeSpan(repl[0]);
-                if (start >= en) {
-                    text.replace(st, en, old);
-                }
-            }
-        }
-
+        mEditorKeyListener.onKeyDown(this, keyCode, event);
         return super.onKeyDown(keyCode, event);
     }
 
     @Override
     public boolean onKeyUp(int keyCode, KeyEvent event) {
-        if (KeyEvent.KEYCODE_ENTER == keyCode) {
-            indent(getCurrentLine());
-        }
+        mEditorKeyListener.onKeyUp(this, keyCode, event);
         return super.onKeyUp(keyCode, event);
     }
 
@@ -261,8 +247,8 @@ public class CodeEditor extends AppCompatMultiAutoCompleteTextView {
         // Scroll
         setHorizontallyScrolling(true);
 
-        // Clipboard panel
-        setMovementMethod(new EditorMovementMethod(this));
+        // Clipboard panel & key handle
+        setMovementMethod(EditorMovementMethod.getInstance(this));
         setCustomInsertionActionModeCallback(new ActionMode.Callback() {
             @Override
             public boolean onCreateActionMode(ActionMode mode, Menu menu) {
@@ -640,7 +626,7 @@ public class CodeEditor extends AppCompatMultiAutoCompleteTextView {
     //******************
     //* Section - line *
     //******************
-    private int getCurrentLine() {
+    /* package */ int getCurrentLine() {
         return hasLayout() ? getLayout().getLineForOffset(getSelectionStart()) : 0;
     }
 
@@ -752,7 +738,7 @@ public class CodeEditor extends AppCompatMultiAutoCompleteTextView {
      * Indent by given line
      * @see TSLanguageStyler#getIndentLevel(String, int, int)
      */
-    private void indent(int line) {
+    /* package */ void indent(int line) {
         Editable text = getText();
         int currentLine = getCurrentLine();
         int level = mLanguage.getStyler().getIndentLevel(text.toString(),  currentLine, getPrevnonblankLine());
@@ -801,5 +787,13 @@ public class CodeEditor extends AppCompatMultiAutoCompleteTextView {
 
     public void setLanguage(Language language) {
         mLanguage = language;
+    }
+
+    public EditorKeyListener getEditorKeyListener() {
+        return mEditorKeyListener;
+    }
+
+    public void setEditorKeyListener(EditorKeyListener editorKeyListener) {
+        mEditorKeyListener = editorKeyListener;
     }
 }

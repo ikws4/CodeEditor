@@ -1,22 +1,29 @@
 package io.ikws4.codeeditor.core;
 
+import android.text.Editable;
 import android.text.Selection;
 import android.text.Spannable;
+import android.text.method.KeyListener;
+import android.text.method.QwertyKeyListener;
 import android.text.method.ScrollingMovementMethod;
+import android.util.Log;
 import android.view.GestureDetector;
+import android.view.KeyEvent;
 import android.view.MotionEvent;
+import android.view.View;
 import android.widget.TextView;
 
 import org.checkerframework.checker.units.qual.A;
 
 import io.ikws4.codeeditor.core.component.ClipboardPanel;
+import io.ikws4.codeeditor.core.span.ReplacedSpan;
 
 class EditorMovementMethod extends ScrollingMovementMethod {
     private final GestureDetector mGestureDetector;
     private final ClipboardPanel mClipboardPanel;
     private final CodeEditor mEditor;
 
-    public EditorMovementMethod(CodeEditor editor) {
+    private EditorMovementMethod(CodeEditor editor) {
         mEditor = editor;
         mClipboardPanel = new ClipboardPanel(mEditor);
         mGestureDetector = new GestureDetector(mEditor.getContext(), new GestureDetector.SimpleOnGestureListener() {
@@ -33,14 +40,7 @@ class EditorMovementMethod extends ScrollingMovementMethod {
                 }
                 return false;
             }
-
-
         });
-    }
-
-    @Override
-    public boolean canSelectArbitrarily() {
-        return true;
     }
 
     @Override
@@ -49,8 +49,22 @@ class EditorMovementMethod extends ScrollingMovementMethod {
         return super.onTouchEvent(widget, buffer, event);
     }
 
+    @Override
+    public boolean canSelectArbitrarily() {
+        return true;
+    }
+
     private void showClipboardPanel() {
         if (mClipboardPanel.isShow()) return;
         mEditor.startActionMode(mClipboardPanel);
     }
+
+    public static EditorMovementMethod getInstance(CodeEditor editor) {
+        if (sInstance == null) {
+            sInstance = new EditorMovementMethod(editor);
+        }
+        return sInstance;
+    }
+
+    private static EditorMovementMethod sInstance;
 }

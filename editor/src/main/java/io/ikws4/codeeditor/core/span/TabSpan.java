@@ -11,6 +11,7 @@ import androidx.annotation.ColorInt;
 public class TabSpan extends ReplacedSpan implements LeadingMarginSpan {
     private final String mTab;
     private final int mColor;
+    private float[] mPoints;
 
     public TabSpan(String tab, @ColorInt int color) {
         super(new char[0]);
@@ -26,20 +27,21 @@ public class TabSpan extends ReplacedSpan implements LeadingMarginSpan {
     @Override
     public void drawLeadingMargin(Canvas c, Paint p, int x, int dir, int top, int baseline, int bottom, CharSequence text, int start, int end, boolean first, Layout layout) {
         if (mTab.length() <= 0) return;
-        float charWidth = p.measureText(String.valueOf(mTab.charAt(0)));
+        if (mPoints == null) {
+            float charWidth = p.measureText(String.valueOf(mTab.charAt(0)));
+            int centerY = top + (bottom - top) / 2;
+            mPoints = new float[2 * mTab.length()];
+            for (int i = 0; i < mPoints.length; i += 2) {
+                mPoints[i] = charWidth * (i + 1) / 2;
+                mPoints[i + 1] = centerY;
+            }
 
-        int centerY = top + (bottom - top) / 2;
-        float[] points = new float[2 * mTab.length()];
-        for (int i = 0; i < points.length; i += 2) {
-            points[i] = charWidth * (i + 1) / 2;
-            points[i + 1] = centerY;
         }
-
         TextPaint paint = new TextPaint(p);
         paint.setColor(mColor);
         paint.setAntiAlias(true);
-        paint.setStrokeWidth(4);
+        paint.setStrokeWidth(5);
         paint.setStrokeCap(Paint.Cap.ROUND);
-        c.drawPoints(points, paint);
+        c.drawPoints(mPoints, paint);
     }
 }
