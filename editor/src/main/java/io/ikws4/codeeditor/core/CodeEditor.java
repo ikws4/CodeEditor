@@ -80,7 +80,7 @@ public class CodeEditor extends AppCompatMultiAutoCompleteTextView {
     private int mGutterWidth;
     private final int mGutterPaddingLeft = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 6, getResources().getDisplayMetrics());
     private final int mGutterPaddingRight = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 6, getResources().getDisplayMetrics());
-    private final int mGutterMarginRight = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 4, getResources().getDisplayMetrics());
+    private final int mGutterMarginRight = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 0, getResources().getDisplayMetrics());
 
     // Highlight
     private SyntaxHighlightTask mSyntaxHighlightTask;
@@ -336,7 +336,7 @@ public class CodeEditor extends AppCompatMultiAutoCompleteTextView {
 
         mGutterDividerPaint.setColor(colorScheme.getGutterDividerColor());
         mGutterDividerPaint.setStyle(Paint.Style.STROKE);
-        mGutterDividerPaint.setStrokeWidth(3.0f);
+        mGutterDividerPaint.setStrokeWidth(1.0f);
 
         mGutterTextPaint.setColor(colorScheme.getGutterTextColor());
         mGutterTextPaint.setTypeface(basePaint.getTypeface());
@@ -389,13 +389,16 @@ public class CodeEditor extends AppCompatMultiAutoCompleteTextView {
     //******************
     @Override
     protected void onDraw(Canvas canvas) {
+        if (mConfiguration.isNumber()) {
+            drawGutter(canvas);
+            drawGutterDivider(canvas);
+        }
+
         if (mConfiguration.isCursorLine()) {
             drawCursorLine(canvas);
         }
 
         if (mConfiguration.isNumber()) {
-            drawGutter(canvas);
-            drawGutterDivider(canvas);
             drawLineNumber(canvas);
         }
 
@@ -406,7 +409,7 @@ public class CodeEditor extends AppCompatMultiAutoCompleteTextView {
         if (!hasLayout() || hasSelection()) return;
 
         int lineHeight = getLineHeight();
-        float left = getScrollX() + mGutterWidth;
+        float left = getScrollX();
         float right = getLayout().getWidth() + getPaddingLeft() + getPaddingRight();
         float top = getLayout().getLineTop(getCurrentLine()) + getPaddingTop() - (lineHeight - (lineHeight / getLineSpacingMultiplier())) / 2;
         float bottom = top + lineHeight;

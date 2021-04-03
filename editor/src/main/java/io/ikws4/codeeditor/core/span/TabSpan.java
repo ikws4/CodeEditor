@@ -1,12 +1,10 @@
 package io.ikws4.codeeditor.core.span;
 
 import android.graphics.Canvas;
-import android.graphics.Color;
 import android.graphics.Paint;
 import android.text.Layout;
 import android.text.TextPaint;
 import android.text.style.LeadingMarginSpan;
-import android.util.Log;
 
 import androidx.annotation.ColorInt;
 
@@ -25,7 +23,6 @@ public class TabSpan extends ReplacedSpan implements LeadingMarginSpan {
         return 0;
     }
 
-    private static final String TAG = "TabSpan";
     @Override
     public void drawLeadingMargin(Canvas c, Paint p, int x, int dir, int top, int baseline, int bottom, CharSequence text, int start, int end, boolean first, Layout layout) {
         if (mTab.length() <= 0) return;
