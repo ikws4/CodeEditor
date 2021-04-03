@@ -35,6 +35,8 @@ public class MainActivity extends AppCompatActivity {
             }
             return true;
         });
+
+        binding.keyboardBar.attach(editor);
     }
 
     private String getExampleJavaSourceCode() {

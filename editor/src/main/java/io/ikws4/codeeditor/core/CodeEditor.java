@@ -3,6 +3,7 @@ package io.ikws4.codeeditor.core;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
+import android.graphics.Rect;
 import android.graphics.Typeface;
 import android.graphics.drawable.ColorDrawable;
 import android.os.Build;
@@ -12,6 +13,7 @@ import android.text.Selection;
 import android.text.Spanned;
 import android.text.TextWatcher;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.util.TypedValue;
 import android.view.ActionMode;
 import android.view.GestureDetector;
@@ -21,7 +23,9 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.ScaleGestureDetector;
+import android.view.ViewOverlay;
 import android.view.inputmethod.EditorInfo;
+import android.view.inputmethod.InputMethodManager;
 import android.view.textclassifier.TextClassifier;
 import android.widget.OverScroller;
 
@@ -32,6 +36,7 @@ import androidx.appcompat.widget.AppCompatMultiAutoCompleteTextView;
 import java.util.ArrayList;
 import java.util.List;
 
+import io.ikws4.codeeditor.R;
 import io.ikws4.codeeditor.core.colorscheme.ColorScheme;
 import io.ikws4.codeeditor.core.completion.SuggestionAdapter;
 import io.ikws4.codeeditor.core.completion.SugguestionTokenizer;
@@ -71,9 +76,9 @@ public class CodeEditor extends AppCompatMultiAutoCompleteTextView {
 
     // Gutter
     private int mGutterWidth;
-    private final int mGutterPaddingLeft = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 6, getResources().getDisplayMetrics());
-    private final int mGutterPaddingRight = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 6, getResources().getDisplayMetrics());
-    private final int mGutterMarginRight = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 0, getResources().getDisplayMetrics());
+    private final int mGutterPaddingLeft = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 8, getResources().getDisplayMetrics());
+    private final int mGutterPaddingRight = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 4, getResources().getDisplayMetrics());
+    private final int mGutterMarginRight = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 4, getResources().getDisplayMetrics());
 
     // Highlight
     private SyntaxHighlightTask mSyntaxHighlightTask;
@@ -204,11 +209,6 @@ public class CodeEditor extends AppCompatMultiAutoCompleteTextView {
         mGutterTextPaint.setTextSize(s);
         mGutterActiveTextPaint.setTextSize(s);
         mSuggestionAdapter.setTextSize(size);
-    }
-
-    @Override
-    public boolean onKeyPreIme(int keyCode, KeyEvent event) {
-        return super.onKeyPreIme(keyCode, event);
     }
 
     @Override

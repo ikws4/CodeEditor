@@ -1,9 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:orientation="vertical"
     tools:context=".MainActivity">
 
     <com.google.android.material.appbar.AppBarLayout
@@ -23,14 +24,21 @@
     <io.ikws4.codeeditor.core.CodeEditor
         android:id="@+id/editor"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
         android:dropDownWidth="196dp"
         android:dropDownHeight="120dp"
         android:importantForAutofill="no"
         android:padding="0dp"
         android:popupElevation="1dp"
         android:scrollbars="none"
-        android:textCursorDrawable="@drawable/editor_cursor"
-        app:layout_behavior="@string/appbar_scrolling_view_behavior" />
+        android:textCursorDrawable="@drawable/editor_cursor" />
 
-</androidx.coordinatorlayout.widget.CoordinatorLayout>
+    <io.ikws4.codeeditor.core.component.KeyboardExtensionBar
+        android:id="@+id/keyboard_bar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:visibility="visible"
+        tools:visibility="visible" />
+
+</LinearLayout>
