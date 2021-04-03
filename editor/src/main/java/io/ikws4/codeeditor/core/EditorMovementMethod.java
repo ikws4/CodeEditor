@@ -3,9 +3,11 @@ package io.ikws4.codeeditor.core;
 import android.text.Editable;
 import android.text.Selection;
 import android.text.Spannable;
+import android.text.method.ArrowKeyMovementMethod;
 import android.text.method.KeyListener;
 import android.text.method.QwertyKeyListener;
 import android.text.method.ScrollingMovementMethod;
+import android.text.method.Touch;
 import android.util.Log;
 import android.view.GestureDetector;
 import android.view.KeyEvent;
@@ -18,7 +20,7 @@ import org.checkerframework.checker.units.qual.A;
 import io.ikws4.codeeditor.core.component.ClipboardPanel;
 import io.ikws4.codeeditor.core.span.ReplacedSpan;
 
-class EditorMovementMethod extends ScrollingMovementMethod {
+class EditorMovementMethod extends ArrowKeyMovementMethod {
     private final GestureDetector mGestureDetector;
     private final ClipboardPanel mClipboardPanel;
     private final CodeEditor mEditor;
@@ -46,7 +48,7 @@ class EditorMovementMethod extends ScrollingMovementMethod {
     @Override
     public boolean onTouchEvent(TextView widget, Spannable buffer, MotionEvent event) {
         mGestureDetector.onTouchEvent(event);
-        return super.onTouchEvent(widget, buffer, event);
+        return Touch.onTouchEvent(widget, buffer, event);
     }
 
     @Override
