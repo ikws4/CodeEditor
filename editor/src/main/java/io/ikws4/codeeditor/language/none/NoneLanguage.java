@@ -3,15 +3,15 @@ package io.ikws4.codeeditor.language.none;
 import java.util.Collections;
 import java.util.List;
 
-import io.ikws4.codeeditor.core.colorscheme.SyntaxColorScheme;
-import io.ikws4.codeeditor.core.span.SyntaxHighlightSpan;
-import io.ikws4.codeeditor.language.Language;
-import io.ikws4.codeeditor.language.LanguageParser;
-import io.ikws4.codeeditor.language.LanguageStyler;
-import io.ikws4.codeeditor.language.LanguageSuggestionProvider;
-import io.ikws4.codeeditor.language.ParseException;
-import io.ikws4.codeeditor.language.ParseResult;
-import io.ikws4.codeeditor.language.Suggestion;
+import io.ikws4.codeeditor.api.configuration.SyntaxColorScheme;
+import io.ikws4.codeeditor.span.SyntaxHighlightSpan;
+import io.ikws4.codeeditor.api.language.Language;
+import io.ikws4.codeeditor.api.language.LanguageParser;
+import io.ikws4.codeeditor.api.language.LanguageStyler;
+import io.ikws4.codeeditor.api.language.LanguageSuggestionProvider;
+import io.ikws4.codeeditor.api.language.ParseException;
+import io.ikws4.codeeditor.api.language.ParseResult;
+import io.ikws4.codeeditor.api.language.Suggestion;
 
 public class NoneLanguage implements Language {
     @Override

@@ -1,9 +1,9 @@
 package io.ikws4.codeeditor.language.java;
 
 
-import io.ikws4.codeeditor.language.LanguageParser;
-import io.ikws4.codeeditor.language.ParseException;
-import io.ikws4.codeeditor.language.ParseResult;
+import io.ikws4.codeeditor.api.language.LanguageParser;
+import io.ikws4.codeeditor.api.language.ParseException;
+import io.ikws4.codeeditor.api.language.ParseResult;
 
 class JavaParser implements LanguageParser {
     private static JavaParser sInstance;

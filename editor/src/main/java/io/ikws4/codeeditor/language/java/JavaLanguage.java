@@ -1,9 +1,9 @@
 package io.ikws4.codeeditor.language.java;
 
-import io.ikws4.codeeditor.language.Language;
-import io.ikws4.codeeditor.language.LanguageParser;
-import io.ikws4.codeeditor.language.LanguageSuggestionProvider;
-import io.ikws4.codeeditor.language.LanguageStyler;
+import io.ikws4.codeeditor.api.language.Language;
+import io.ikws4.codeeditor.api.language.LanguageParser;
+import io.ikws4.codeeditor.api.language.LanguageSuggestionProvider;
+import io.ikws4.codeeditor.api.language.LanguageStyler;
 
 public class JavaLanguage implements Language {
     @Override

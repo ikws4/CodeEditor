@@ -1,6 +1,6 @@
 package io.ikws4.codeeditor.language.java;
 
-import io.ikws4.codeeditor.language.treesitter.TSLangaugeQuery;
+import io.ikws4.codeeditor.language.TSLangaugeQuery;
 
 class JavaQuery implements TSLangaugeQuery {
     @Override

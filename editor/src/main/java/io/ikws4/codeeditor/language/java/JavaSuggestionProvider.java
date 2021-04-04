@@ -1,15 +1,12 @@
 package io.ikws4.codeeditor.language.java;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
-import io.ikws4.codeeditor.language.LanguageSuggestionProvider;
-import io.ikws4.codeeditor.language.Suggestion;
+import io.ikws4.codeeditor.api.language.LanguageSuggestionProvider;
+import io.ikws4.codeeditor.api.language.Suggestion;
 
 class JavaSuggestionProvider implements LanguageSuggestionProvider {
     private static JavaSuggestionProvider sInstance;

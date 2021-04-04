@@ -8,7 +8,6 @@ import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 
-import io.ikws4.codeeditor.core.CodeEditor;
 import io.ikws4.codeeditor.databinding.ActivityMainBinding;
 
 public class MainActivity extends AppCompatActivity {

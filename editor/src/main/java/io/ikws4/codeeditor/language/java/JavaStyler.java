@@ -6,9 +6,10 @@ import com.google.googlejavaformat.java.Formatter;
 import com.google.googlejavaformat.java.FormatterException;
 import com.google.googlejavaformat.java.JavaFormatterOptions;
 
-import io.ikws4.codeeditor.core.colorscheme.SyntaxColorScheme;
-import io.ikws4.codeeditor.core.span.SyntaxHighlightSpan;
-import io.ikws4.codeeditor.language.treesitter.TSLanguageStyler;
+import io.ikws4.codeeditor.api.configuration.SyntaxColorScheme;
+import io.ikws4.codeeditor.language.TSHighlightType;
+import io.ikws4.codeeditor.span.SyntaxHighlightSpan;
+import io.ikws4.codeeditor.language.TSLanguageStyler;
 import io.ikws4.jsitter.TSLanguages;
 
 class JavaStyler extends TSLanguageStyler {
@@ -43,7 +44,7 @@ class JavaStyler extends TSLanguageStyler {
     }
 
     @Override
-    protected SyntaxHighlightSpan onBuildSpan(TSHightlightType type, int start, int end, SyntaxColorScheme scheme) {
+    protected SyntaxHighlightSpan onBuildSpan(TSHighlightType type, int start, int end, SyntaxColorScheme scheme) {
         switch (type) {
             case Attribute:
                 return new SyntaxHighlightSpan(scheme.getAnnotationColor(), start, end);

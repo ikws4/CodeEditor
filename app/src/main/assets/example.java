@@ -13,10 +13,10 @@ import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.List;
 
-import io.ikws4.codeeditor.language.Language;
-import io.ikws4.codeeditor.language.LanguageStyler;
+import io.ikws4.codeeditor.api.language.Language;
+import io.ikws4.codeeditor.api.language.LanguageStyler;
 import io.ikws4.codeeditor.language.java.JavaLanguage;
-import io.ikws4.codeeditor.core.span.SyntaxHighlightSpan;
+import io.ikws4.codeeditor.span.SyntaxHighlightSpan;
 import io.ikws4.jsitter.TSLanguages;
 import io.ikws4.jsitter.TSParser;
 import io.ikws4.jsitter.TSQuery;
