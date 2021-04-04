@@ -34,7 +34,7 @@
         android:scrollbars="none"
         android:textCursorDrawable="@drawable/editor_cursor" />
 
-    <io.ikws4.codeeditor.core.component.KeyboardExtensionBar
+    <io.ikws4.codeeditor.core.component.Toolbar
         android:id="@+id/keyboard_bar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"

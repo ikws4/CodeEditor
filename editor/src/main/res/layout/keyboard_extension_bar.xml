@@ -11,14 +11,14 @@
         android:layout_height="match_parent"
         android:orientation="horizontal">
 
-        <io.ikws4.codeeditor.core.component.KeyboardButton
+        <io.ikws4.codeeditor.core.component.KeyButton
             android:id="@+id/tab"
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="1"
             android:src="@drawable/ic_keyboard_tab" />
 
-        <io.ikws4.codeeditor.core.component.KeyboardButton
+        <io.ikws4.codeeditor.core.component.KeyButton
             android:id="@+id/up"
             android:layout_width="0dp"
             android:layout_height="match_parent"
@@ -26,7 +26,7 @@
             android:longClickable="true"
             android:src="@drawable/ic_keyboard_arrow_up" />
 
-        <io.ikws4.codeeditor.core.component.KeyboardButton
+        <io.ikws4.codeeditor.core.component.KeyButton
             android:id="@+id/down"
             android:layout_width="0dp"
             android:layout_height="match_parent"
@@ -34,7 +34,7 @@
             android:longClickable="true"
             android:src="@drawable/ic_keyboard_arrow_down" />
 
-        <io.ikws4.codeeditor.core.component.KeyboardButton
+        <io.ikws4.codeeditor.core.component.KeyButton
             android:id="@+id/left"
             android:layout_width="0dp"
             android:layout_height="match_parent"
@@ -42,7 +42,7 @@
             android:longClickable="true"
             android:src="@drawable/ic_keyboard_arrow_left" />
 
-        <io.ikws4.codeeditor.core.component.KeyboardButton
+        <io.ikws4.codeeditor.core.component.KeyButton
             android:id="@+id/right"
             android:layout_width="0dp"
             android:layout_height="match_parent"
@@ -50,7 +50,7 @@
             android:longClickable="true"
             android:src="@drawable/ic_keyboard_arrow_right" />
 
-        <io.ikws4.codeeditor.core.component.KeyboardButton
+        <io.ikws4.codeeditor.core.component.KeyButton
             android:id="@+id/keyboard_toggle"
             android:layout_width="0dp"
             android:layout_height="match_parent"

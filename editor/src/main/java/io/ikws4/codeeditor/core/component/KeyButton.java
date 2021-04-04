@@ -10,19 +10,19 @@ import android.view.View;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
-public class KeyboardButton extends androidx.appcompat.widget.AppCompatImageButton implements Runnable, View.OnLongClickListener, View.OnClickListener {
+public class KeyButton extends androidx.appcompat.widget.AppCompatImageButton implements Runnable, View.OnLongClickListener, View.OnClickListener {
     private boolean mLongPressed;
     private OnPressedListener mOnPressedListener;
 
-    public KeyboardButton(@NonNull Context context) {
+    public KeyButton(@NonNull Context context) {
         this(context, null);
     }
 
-    public KeyboardButton(@NonNull Context context, @Nullable AttributeSet attrs) {
+    public KeyButton(@NonNull Context context, @Nullable AttributeSet attrs) {
         this(context, attrs, android.R.attr.imageButtonStyle);
     }
 
-    public KeyboardButton(@NonNull Context context, @Nullable AttributeSet attrs, int defStyleAttr) {
+    public KeyButton(@NonNull Context context, @Nullable AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
         TypedValue value = new TypedValue();
         getContext().getTheme().resolveAttribute(android.R.attr.selectableItemBackground, value, true);
