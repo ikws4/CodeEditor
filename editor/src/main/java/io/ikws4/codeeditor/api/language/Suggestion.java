@@ -21,10 +21,6 @@ public class Suggestion {
         return mType;
     }
 
-    public String getTypeString() {
-        return mType.toString();
-    }
-
     public String getText() {
         return mText;
     }
@@ -39,7 +35,7 @@ public class Suggestion {
         return mText;
     }
 
-    enum Type {
+    public enum Type {
         KEYWORD("k"),
 
         IDENTIFIER("w"),

@@ -42,7 +42,7 @@ public class SuggestionAdapter extends ArrayAdapter<Suggestion> {
             viewHolder = (ViewHolder) convertView.getTag();
         }
 
-        viewHolder.type.setText(suggestion.getTypeString());
+        viewHolder.type.setText(suggestion.getType().toString());
         viewHolder.suggestion.setText(suggestion.getText());
 
         viewHolder.type.setTextSize(mTextSize);

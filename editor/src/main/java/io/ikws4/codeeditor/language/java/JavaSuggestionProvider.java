@@ -7,6 +7,7 @@ import java.util.Map;
 
 import io.ikws4.codeeditor.api.language.LanguageSuggestionProvider;
 import io.ikws4.codeeditor.api.language.Suggestion;
+import io.ikws4.codeeditor.api.language.Suggestion.Type;
 
 class JavaSuggestionProvider implements LanguageSuggestionProvider {
     private static JavaSuggestionProvider sInstance;
@@ -33,7 +34,7 @@ class JavaSuggestionProvider implements LanguageSuggestionProvider {
         List<Suggestion> suggestions = new ArrayList<>();
         // keywords
         for (String keyword : mKeywords) {
-            suggestions.add(new Suggestion(Suggestion.Type.KEYWORD, keyword));
+            suggestions.add(new Suggestion(Type.KEYWORD, keyword));
         }
         for (List<Suggestion> value : mLineSuggestions.values()) {
             suggestions.addAll(value);
