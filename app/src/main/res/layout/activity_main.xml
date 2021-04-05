@@ -39,7 +39,6 @@
         android:id="@+id/keyboard_bar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:visibility="visible"
-        tools:visibility="visible" />
+        android:visibility="visible" />
 
 </LinearLayout>

@@ -46,6 +46,9 @@ public class MainActivity extends AppCompatActivity {
             for (String line; (line = reader.readLine()) != null;) {
                 builder.append(line).append('\n');
             }
+            for (int i = 0; i < 3; i++) {
+                 builder.append(builder.toString());
+            }
             return builder.toString();
         } catch (Exception e) {
             return "";

@@ -9,20 +9,20 @@ import java.util.List;
 import io.ikws4.codeeditor.CodeEditor;
 import io.ikws4.codeeditor.api.configuration.SyntaxColorScheme;
 import io.ikws4.codeeditor.api.language.LanguageStyler;
-import io.ikws4.codeeditor.span.SyntaxHighlightSpan;
+import io.ikws4.codeeditor.span.SyntaxSpan;
 
-public class SyntaxHighlightTask extends AsyncTask<Void, Void, List<SyntaxHighlightSpan>> {
+public class SyntaxHighlightTask extends AsyncTask<Void, Void, List<SyntaxSpan>> {
     private final WeakReference<CodeEditor> mEditor;
-    private final OnTaskFinishedListener<List<SyntaxHighlightSpan>> mListener;
+    private final OnTaskFinishedListener<List<SyntaxSpan>> mListener;
 
-    public SyntaxHighlightTask(CodeEditor editor, OnTaskFinishedListener<List<SyntaxHighlightSpan>> listener) {
+    public SyntaxHighlightTask(CodeEditor editor, OnTaskFinishedListener<List<SyntaxSpan>> listener) {
         super();
         mEditor = new WeakReference<>(editor);
         mListener = listener;
     }
 
     @Override
-    protected List<SyntaxHighlightSpan> doInBackground(Void... voids) {
+    protected List<SyntaxSpan> doInBackground(Void... voids) {
         CodeEditor editor = mEditor.get();
         Editable content = editor.getText();
         LanguageStyler highlighter = editor.getLanguage().getStyler();
@@ -31,7 +31,7 @@ public class SyntaxHighlightTask extends AsyncTask<Void, Void, List<SyntaxHighli
     }
 
     @Override
-    protected void onPostExecute(List<SyntaxHighlightSpan> spans) {
+    protected void onPostExecute(List<SyntaxSpan> spans) {
         mListener.onFinished(spans);
     }
 }

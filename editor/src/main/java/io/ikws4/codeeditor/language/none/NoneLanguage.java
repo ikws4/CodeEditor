@@ -4,7 +4,7 @@ import java.util.Collections;
 import java.util.List;
 
 import io.ikws4.codeeditor.api.configuration.SyntaxColorScheme;
-import io.ikws4.codeeditor.span.SyntaxHighlightSpan;
+import io.ikws4.codeeditor.span.SyntaxSpan;
 import io.ikws4.codeeditor.api.language.Language;
 import io.ikws4.codeeditor.api.language.LanguageParser;
 import io.ikws4.codeeditor.api.language.LanguageStyler;
@@ -64,7 +64,7 @@ public class NoneLanguage implements Language {
             }
 
             @Override
-            public int getIndentLevel(String source, int line, int prevnonblankLine) {
+            public int getIndentLevel(int line, int prevnonblankLine) {
                 return 0;
             }
 
@@ -74,7 +74,7 @@ public class NoneLanguage implements Language {
             }
 
             @Override
-            public List<SyntaxHighlightSpan> highlight(String source, SyntaxColorScheme scheme) {
+            public List<SyntaxSpan> highlight(String source, SyntaxColorScheme scheme) {
                 return Collections.emptyList();
             }
         };

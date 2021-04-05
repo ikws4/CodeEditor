@@ -16,7 +16,7 @@ import java.util.List;
 import io.ikws4.codeeditor.api.language.Language;
 import io.ikws4.codeeditor.api.language.LanguageStyler;
 import io.ikws4.codeeditor.language.java.JavaLanguage;
-import io.ikws4.codeeditor.span.SyntaxHighlightSpan;
+import io.ikws4.codeeditor.span.SyntaxSpan;
 import io.ikws4.jsitter.TSLanguages;
 import io.ikws4.jsitter.TSParser;
 import io.ikws4.jsitter.TSQuery;
@@ -38,7 +38,7 @@ abstract class SyntaxHighlightEditText extends NumberLineEditText {
     private Language mLanguage;
 
     // Spans
-    private final List<SyntaxHighlightSpan> mSyntaxHighlightSpans = new ArrayList<>();
+    private final List<SyntaxSpan> mSyntaxSpans = new ArrayList<>();
 
     public SyntaxHighlightEditText(@NonNull Context context) {
         this(context, null);
@@ -77,16 +77,16 @@ abstract class SyntaxHighlightEditText extends NumberLineEditText {
         int end = getLayout().getLineEnd(getMaxVisibleLine());
         int n = syntaxHighlightSpanIndexOf(end);
         for (int i = syntaxHighlightSpanIndexOf(start); i < n; i++) {
-            SyntaxHighlightSpan span = mSyntaxHighlightSpans.get(i);
+            SyntaxSpan span = mSyntaxSpans.get(i);
             text.setSpan(span, span.getStart(), span.getEnd(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         }
     }
 
     private int syntaxHighlightSpanIndexOf(int pos) {
-        int l = 0, r = mSyntaxHighlightSpans.size();
+        int l = 0, r = mSyntaxSpans.size();
         while (l < r) {
             int m = l + (r - l) / 2;
-            SyntaxHighlightSpan span = mSyntaxHighlightSpans.get(m);
+            SyntaxSpan span = mSyntaxSpans.get(m);
             if (span.getStart() < pos) {
                 l = m + 1;
             } else {
@@ -97,9 +97,9 @@ abstract class SyntaxHighlightEditText extends NumberLineEditText {
     }
 
     private void cleanSyntaxHighlightSpan() {
-        SyntaxHighlightSpan[] spans = getText().getSpans(0, getText().length(), SyntaxHighlightSpan.class);
+        SyntaxSpan[] spans = getText().getSpans(0, getText().length(), SyntaxSpan.class);
         Editable text = getText();
-        for (SyntaxHighlightSpan span : spans) {
+        for (SyntaxSpan span : spans) {
             text.removeSpan(span);
         }
     }
@@ -118,7 +118,7 @@ abstract class SyntaxHighlightEditText extends NumberLineEditText {
         TSTreeCursor cursor = tree.getRootNode().walk();
     }
 
-    private static class SyntaxHighlightTask extends AsyncTask<Void, Void, List<SyntaxHighlightSpan>> {
+    private static class SyntaxHighlightTask extends AsyncTask<Void, Void, List<SyntaxSpan>> {
         private final WeakReference<SyntaxHighlightEditText> mEditor;
 
         public SyntaxHighlightTask(SyntaxHighlightEditText editor) {
@@ -127,18 +127,18 @@ abstract class SyntaxHighlightEditText extends NumberLineEditText {
         }
 
         @Override
-        protected List<SyntaxHighlightSpan> doInBackground(Void... voids) {
+        protected List<SyntaxSpan> doInBackground(Void... voids) {
             SyntaxHighlightEditText editor = mEditor.get();
             LanguageStyler h = editor.getLanguage().getStyler();
             return h.highlight(editor.getText().toString(), editor.getColorScheme().getSyntaxScheme());
         }
 
         @Override
-        protected void onPostExecute(List<SyntaxHighlightSpan> spans) {
+        protected void onPostExecute(List<SyntaxSpan> spans) {
             if (spans == null) return;
             SyntaxHighlightEditText editor = mEditor.get();
-            editor.mSyntaxHighlightSpans.clear();
-            editor.mSyntaxHighlightSpans.addAll(spans);
+            editor.mSyntaxSpans.clear();
+            editor.mSyntaxSpans.addAll(spans);
             editor.updateSyntaxHighlighting();
         }
     }

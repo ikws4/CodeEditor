@@ -6,7 +6,7 @@ import java.util.List;
 
 import io.ikws4.codeeditor.api.configuration.SyntaxColorScheme;
 import io.ikws4.codeeditor.api.language.LanguageStyler;
-import io.ikws4.codeeditor.span.SyntaxHighlightSpan;
+import io.ikws4.codeeditor.span.SyntaxSpan;
 import io.ikws4.jsitter.TSNode;
 import io.ikws4.jsitter.TSParser;
 import io.ikws4.jsitter.TSQuery;
@@ -21,8 +21,6 @@ public abstract class TSLanguageStyler implements LanguageStyler {
     private final TSQuery mHighlightQuery;
     private final TSQuery mIndentQuery;
     private TSTree mTree;
-
-    private boolean isParsing = false;
 
     static {
         hlmap = new HashMap<>();
@@ -102,10 +100,9 @@ public abstract class TSLanguageStyler implements LanguageStyler {
      * Reference <a href="https://github.com/nvim-treesitter/nvim-treesitter/blob/master/lua/nvim-treesitter/indent.lua">https://github.com/nvim-treesitter/nvim-treesitter/blob/master/lua/nvim-treesitter/indent.lua</a>
      */
     @Override
-    public int getIndentLevel(String source, int line, int prevnonblankLine) {
+    public int getIndentLevel(int line, int prevnonblankLine) {
         int level = 0;
 
-        parse(source);
         TSNode root = mTree.getRoot();
         TSNode curr = TSUtil.getNodeAtLine(root, line);
 
@@ -177,26 +174,24 @@ public abstract class TSLanguageStyler implements LanguageStyler {
     }
 
     @Override
-    public List<SyntaxHighlightSpan> highlight(String source, SyntaxColorScheme scheme) {
-        List<SyntaxHighlightSpan> spans = new ArrayList<>();
+    public List<SyntaxSpan> highlight(String source, SyntaxColorScheme scheme) {
+        List<SyntaxSpan> spans = new ArrayList<>();
         parse(source);
 
         for (TSQueryCapture capture : mHighlightQuery.captureIter(mTree.getRoot())) {
             TSNode node = capture.getNode();
-            SyntaxHighlightSpan span = onBuildSpan(hlmap.get(capture.getName()), node.getStartByte(), node.getEndByte(), scheme);
+            SyntaxSpan span = onBuildSpan(hlmap.get(capture.getName()), node.getStartByte(), node.getEndByte(), scheme);
             if (span != null) spans.add(span);
         }
 
         return spans;
     }
 
-    protected abstract SyntaxHighlightSpan onBuildSpan(TSHighlightType type, int start, int end, SyntaxColorScheme scheme);
+    protected abstract SyntaxSpan onBuildSpan(TSHighlightType type, int start, int end, SyntaxColorScheme scheme);
 
     private void parse(String source) {
-        if (!isParsing) {
-            isParsing = true;
+        synchronized (this) {
             mTree = mParser.parse(source, mTree);
-            isParsing = false;
         }
     }
 

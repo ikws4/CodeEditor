@@ -8,7 +8,6 @@ import android.graphics.drawable.ColorDrawable;
 import android.os.Build;
 import android.text.Editable;
 import android.text.Selection;
-import android.text.Spanned;
 import android.text.TextWatcher;
 import android.util.AttributeSet;
 import android.util.TypedValue;
@@ -39,7 +38,7 @@ import io.ikws4.codeeditor.configuration.Configuration;
 import io.ikws4.codeeditor.api.configuration.ColorScheme;
 import io.ikws4.codeeditor.completion.SuggestionAdapter;
 import io.ikws4.codeeditor.completion.IdentifireTokenizer;
-import io.ikws4.codeeditor.span.SyntaxHighlightSpan;
+import io.ikws4.codeeditor.span.ExtendedSpan;
 import io.ikws4.codeeditor.span.TabSpan;
 import io.ikws4.codeeditor.task.FormatTask;
 import io.ikws4.codeeditor.task.SyntaxHighlightTask;
@@ -81,10 +80,8 @@ public class CodeEditor extends AppCompatMultiAutoCompleteTextView {
 
     // Highlight
     private SyntaxHighlightTask mSyntaxHighlightTask;
-    private final List<SyntaxHighlightSpan> mSyntaxHighlightSpans;
-    private final TextWatcher mSyntaxHighlightTextWatcher;
-    private final SyntaxTreeEditTextWatcher mSyntaxTreeEditTextWatcher; // update the syntax tree, keep it in sync witch source code
-    private boolean isProcessingSyntaxHighlight = false;
+    private final List<ExtendedSpan> mSpans;
+    private boolean isUpdatingSpan = false;
     private int mTopVisiableLineStart;
     private int mTopVisiableLineEnd;
     private int mBottomVisiableLineStart;
@@ -104,6 +101,7 @@ public class CodeEditor extends AppCompatMultiAutoCompleteTextView {
 
     private final InputMethodManager mIMM;
 
+
     public CodeEditor(@NonNull Context context) {
         this(context, null);
     }
@@ -114,10 +112,9 @@ public class CodeEditor extends AppCompatMultiAutoCompleteTextView {
 
     public CodeEditor(@NonNull Context context, @Nullable AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
-
         mConfiguration = new Configuration();
-        mSyntaxHighlightSpans = new ArrayList<>();
         mLanguage = new JavaLanguage();
+        mSpans = new ArrayList<>();
         mScroller = new OverScroller(context);
         mSuggestionAdapter = new SuggestionAdapter(context);
         mIdentifireTokenizer = new IdentifireTokenizer();
@@ -143,31 +140,6 @@ public class CodeEditor extends AppCompatMultiAutoCompleteTextView {
             }
         });
 
-        mSyntaxTreeEditTextWatcher = new SyntaxTreeEditTextWatcher(this);
-        mSyntaxHighlightTextWatcher = new TextWatcher() {
-            private int addedTextCount = 0;
-
-            @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-                addedTextCount -= count;
-                stopHighlightTask();
-            }
-
-            @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {
-                addedTextCount += count;
-            }
-
-            @Override
-            public void afterTextChanged(Editable s) {
-                if (!isProcessingSyntaxHighlight) {
-                    shiftSyntaxSpans(getSelectionStart(), addedTextCount);
-                }
-                startHighlightTask();
-                addedTextCount = 0;
-            }
-        };
-
         mEditorKeyListener = new EditorBaseKeyListener();
         mEditorKeyboardEventListeners = new ArrayList<>();
 
@@ -189,12 +161,12 @@ public class CodeEditor extends AppCompatMultiAutoCompleteTextView {
     @Override
     protected void onConfigurationChanged(android.content.res.Configuration newConfig) {
         super.onConfigurationChanged(newConfig);
-        post(this::updateSyntaxHighlight);
+        post(this::updateSpan);
     }
 
     @Override
     protected void onSizeChanged(int w, int h, int oldw, int oldh) {
-        post(this::updateSyntaxHighlight);
+        post(this::updateSpan);
 
         // handle keyboard event listener
         if (Math.abs(h - oldh) > 100) {
@@ -211,7 +183,7 @@ public class CodeEditor extends AppCompatMultiAutoCompleteTextView {
     @Override
     protected void onScrollChanged(int horiz, int vert, int oldHoriz, int oldVert) {
         super.onScrollChanged(horiz, vert, oldHoriz, oldVert);
-        post(this::updateSyntaxHighlightWhenScroll);
+        post(this::updateSpanWhenScroll);
     }
 
     @Override
@@ -255,8 +227,30 @@ public class CodeEditor extends AppCompatMultiAutoCompleteTextView {
                 | EditorInfo.TYPE_TEXT_FLAG_NO_SUGGESTIONS
                 | EditorInfo.TYPE_TEXT_FLAG_MULTI_LINE
                 | EditorInfo.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD);
-        addTextChangedListener(mSyntaxTreeEditTextWatcher);
-        addTextChangedListener(mSyntaxHighlightTextWatcher);
+        addTextChangedListener(new SyntaxTreeEditWatcher(this));
+        addTextChangedListener(new TextWatcher() {
+            private int addedTextCount = 0;
+
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+                addedTextCount -= count;
+                stopHighlightTask();
+            }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                addedTextCount += count;
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+                if (!isUpdatingSpan) {
+                    TextBuffer.shiftSpans(mSpans, getSelectionStart(), addedTextCount);
+                }
+                startHighlightTask();
+                addedTextCount = 0;
+            }
+        });
         setIncludeFontPadding(false);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             setTextClassifier(TextClassifier.NO_OP);
@@ -440,7 +434,7 @@ public class CodeEditor extends AppCompatMultiAutoCompleteTextView {
         setTextSize(mConfiguration.getFontSize() * mScaleFactory);
 
         // Need to update the syntax because the visible area changed.
-        post(CodeEditor.this::updateSyntaxHighlight);
+        post(CodeEditor.this::updateSpan);
     }
 
     private void fling(int velocityX, int velocityY) {
@@ -497,40 +491,40 @@ public class CodeEditor extends AppCompatMultiAutoCompleteTextView {
     // Span
     ///////////////////////////////////////////////////////////////////////////
     /**
-     * Update the syntax highlight span on the current visiable area.
+     * Update the span on the current visiable area.
      */
-    private void updateSyntaxHighlight() {
+    private void updateSpan() {
         if (!hasLayout()) return;
 
         int top = getTopVisiableLine();
         int bottom = getBottomVisiableLine();
 
-        updateSyntaxHighlight(getLayout().getLineStart(top), getLayout().getLineEnd(bottom));
+        updateSpan(getLayout().getLineStart(top), getLayout().getLineEnd(bottom));
     }
 
     /**
-     * Update the syntax highlight span by give a range (start, end).
+     * Update the span by give a range (start, end).
      */
-    private void updateSyntaxHighlight(int start, int end) {
-        if (!hasLayout() || isProcessingSyntaxHighlight) return;
+    private void updateSpan(int start, int end) {
+        if (!hasLayout() || isUpdatingSpan) return;
 
-        isProcessingSyntaxHighlight = true;
+        isUpdatingSpan = true;
 
-        cleanSyntaxHighlightSpan(start, end);
-        addSyntaxHighlightSpan(start, end);
+        TextBuffer.cleanSpans(getText(), start, end);
+        TextBuffer.addSpans(getText(), mSpans, start, end);
 
-        isProcessingSyntaxHighlight = false;
+        isUpdatingSpan = false;
     }
 
     /**
-     * Update syntax highlight span only the top up bottom part, when scroll changed,
+     * Update span only the top up bottom part, when scroll changed,
      * this can reduce the update area and imporve the span speed.
-     * if you need update the cureen visiable screen span see {@link #updateSyntaxHighlight()}
+     * if you need update the cureen visiable screen span see {@link #updateSpan()}
      */
-    private void updateSyntaxHighlightWhenScroll() {
-        if (!hasLayout() || isProcessingSyntaxHighlight) return;
+    private void updateSpanWhenScroll() {
+        if (!hasLayout() || isUpdatingSpan) return;
 
-        isProcessingSyntaxHighlight = true;
+        isUpdatingSpan = true;
 
         int topVisiableLine = Math.max(0, getTopVisiableLine() - 1);
         int bottomVisiableLine = getBottomVisiableLine();
@@ -540,17 +534,19 @@ public class CodeEditor extends AppCompatMultiAutoCompleteTextView {
         int bottomVisiableLineStart = getLayout().getLineStart(bottomVisiableLine);
         int bottomVisiableLineEnd = getLayout().getLineEnd(bottomVisiableLine);
 
+        Editable text = getText();
+
         // scroll down
         if (topVisiableLineStart >= mTopVisiableLineStart) {
             if (topVisiableLine != 0) {
-                cleanSyntaxHighlightSpan(Math.min(mTopVisiableLineStart, topVisiableLineStart), Math.max(mTopVisiableLineEnd, topVisiableLineEnd));
+                TextBuffer.cleanSpans(text, Math.min(mTopVisiableLineStart, topVisiableLineStart), Math.max(mTopVisiableLineEnd, topVisiableLineEnd));
             }
-            addSyntaxHighlightSpan(Math.min(mBottomVisiableLineStart, bottomVisiableLineStart), Math.max(mBottomVisiableLineEnd, bottomVisiableLineEnd));
+            TextBuffer.addSpans(text, mSpans, Math.min(mBottomVisiableLineStart, bottomVisiableLineStart), Math.max(mBottomVisiableLineEnd, bottomVisiableLineEnd));
         } else {
             if (bottomVisiableLine != getLineCount() - 1) {
-                cleanSyntaxHighlightSpan(Math.min(mBottomVisiableLineStart, bottomVisiableLineStart), Math.max(mBottomVisiableLineEnd, bottomVisiableLineEnd));
+                TextBuffer.cleanSpans(text, Math.min(mBottomVisiableLineStart, bottomVisiableLineStart), Math.max(mBottomVisiableLineEnd, bottomVisiableLineEnd));
             }
-            addSyntaxHighlightSpan(Math.min(mTopVisiableLineStart, topVisiableLineStart), Math.max(mTopVisiableLineEnd, topVisiableLineEnd));
+            TextBuffer.addSpans(text, mSpans, Math.min(mTopVisiableLineStart, topVisiableLineStart), Math.max(mTopVisiableLineEnd, topVisiableLineEnd));
         }
 
         mTopVisiableLineStart = topVisiableLineStart;
@@ -558,54 +554,7 @@ public class CodeEditor extends AppCompatMultiAutoCompleteTextView {
         mBottomVisiableLineStart = bottomVisiableLineStart;
         mBottomVisiableLineEnd = bottomVisiableLineEnd;
 
-        isProcessingSyntaxHighlight = false;
-    }
-
-    /**
-     * Clean syntax highlight span by given range (start, end)
-     */
-    private void cleanSyntaxHighlightSpan(int start, int end) {
-        Editable content = getText();
-        SyntaxHighlightSpan[] spans = content.getSpans(start, end ,SyntaxHighlightSpan.class);
-        for (SyntaxHighlightSpan span : spans) {
-            content.removeSpan(span);
-        }
-    }
-
-    /**
-     * Add syntax highlight span by given range (start, end)
-     */
-    private void addSyntaxHighlightSpan(int start, int end) {
-        Editable content = getText();
-        int startIndex = getSyntaxSpanIndexAt(start);
-        int endIndex= getSyntaxSpanIndexAt(end);
-        for (int i = startIndex; i < endIndex; i++) {
-            SyntaxHighlightSpan span = mSyntaxHighlightSpans.get(i);
-            content.setSpan(span, span.getStart(), span.getEnd(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-        }
-    }
-
-    private int getSyntaxSpanIndexAt(int start) {
-        int l = 0, r = mSyntaxHighlightSpans.size(), m;
-        while (l < r) {
-            m = l + (r - l) / 2;
-            if (mSyntaxHighlightSpans.get(m).getStart() < start) {
-                l = m + 1;
-            } else {
-                r = m;
-            }
-        }
-        return l;
-    }
-
-    /**
-     * Shift spans by given start and offset.
-     */
-    private void shiftSyntaxSpans(int start, int offset) {
-        int startIndex = getSyntaxSpanIndexAt(start);
-        for (int i = startIndex; i < mSyntaxHighlightSpans.size(); i++) {
-            mSyntaxHighlightSpans.get(i).shift(offset);
-        }
+        isUpdatingSpan = false;
     }
 
 
@@ -618,9 +567,9 @@ public class CodeEditor extends AppCompatMultiAutoCompleteTextView {
         stopHighlightTask();
 
         mSyntaxHighlightTask = new SyntaxHighlightTask(this, spans -> {
-            mSyntaxHighlightSpans.clear();
-            mSyntaxHighlightSpans.addAll(spans);
-            updateSyntaxHighlight();
+            mSpans.clear();
+            mSpans.addAll(spans);
+            updateSpan();
         });
 
         mSyntaxHighlightTask.execute();
@@ -642,17 +591,17 @@ public class CodeEditor extends AppCompatMultiAutoCompleteTextView {
 
     /**
      * Indent by given line
-     * @see TSLanguageStyler#getIndentLevel(String, int, int)
+     * @see TSLanguageStyler#getIndentLevel(int, int)
      */
     /* package */ void indent(int line) {
-        Editable text = getText();
+        Editable content = getText();
         int currentLine = getCurrentLine();
-        int level = mLanguage.getStyler().getIndentLevel(text.toString(),  currentLine, getPrevnonblankLine());
+        int level = mLanguage.getStyler().getIndentLevel(currentLine, getPrevnonblankLine());
         String tab = mConfiguration.getIndentation().get(level);
 
         int start = getLayout().getLineStart(line);
-        text.insert(start, tab);
-        text.setSpan(new TabSpan(tab, mConfiguration.getColorScheme().getIndentColor()), start, getSelectionEnd(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        content.insert(start, tab);
+        TextBuffer.setSpan(content, new TabSpan(tab, mConfiguration.getColorScheme().getIndentColor(), start, getSelectionEnd()));
     }
 
     private int getTopVisiableLine() {

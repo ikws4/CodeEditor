@@ -13,8 +13,8 @@ public class TabSpan extends ReplacedSpan implements LeadingMarginSpan {
     private final int mColor;
     private float[] mPoints;
 
-    public TabSpan(String tab, @ColorInt int color) {
-        super(new char[0]);
+    public TabSpan(String tab, @ColorInt int color, int start, int end) {
+        super(new char[0], start, end);
         mTab = tab;
         mColor = color;
     }

@@ -10,13 +10,13 @@ import androidx.annotation.ColorInt;
 /**
  * A span that support {@link Typeface} and foreground color
  */
-public class SyntaxHighlightSpan extends CharacterStyle implements RangeSpan, ShiftableSpan {
+public class SyntaxSpan extends CharacterStyle implements ExtendedSpan {
     private final int mStyle;
     private final int mColor;
     private int mStart;
     private int mEnd;
 
-    public SyntaxHighlightSpan(@ColorInt int color, int start, int end) {
+    public SyntaxSpan(@ColorInt int color, int start, int end) {
         this(Typeface.NORMAL, color, start, end);
     }
 
@@ -26,7 +26,7 @@ public class SyntaxHighlightSpan extends CharacterStyle implements RangeSpan, Sh
      *              in {@link Typeface}.
      * @param color text color
      */
-    public SyntaxHighlightSpan(int style, @ColorInt int color, int start, int end) {
+    public SyntaxSpan(int style, @ColorInt int color, int start, int end) {
         mStyle = style;
         mColor = color;
         mStart = start;

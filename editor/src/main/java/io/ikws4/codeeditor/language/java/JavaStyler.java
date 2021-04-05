@@ -8,7 +8,7 @@ import com.google.googlejavaformat.java.JavaFormatterOptions;
 
 import io.ikws4.codeeditor.api.configuration.SyntaxColorScheme;
 import io.ikws4.codeeditor.language.TSHighlightType;
-import io.ikws4.codeeditor.span.SyntaxHighlightSpan;
+import io.ikws4.codeeditor.span.SyntaxSpan;
 import io.ikws4.codeeditor.language.TSLanguageStyler;
 import io.ikws4.jsitter.TSLanguages;
 
@@ -44,15 +44,15 @@ class JavaStyler extends TSLanguageStyler {
     }
 
     @Override
-    protected SyntaxHighlightSpan onBuildSpan(TSHighlightType type, int start, int end, SyntaxColorScheme scheme) {
+    protected SyntaxSpan onBuildSpan(TSHighlightType type, int start, int end, SyntaxColorScheme scheme) {
         switch (type) {
             case Attribute:
-                return new SyntaxHighlightSpan(scheme.getAnnotationColor(), start, end);
+                return new SyntaxSpan(scheme.getAnnotationColor(), start, end);
             case Comment:
-                return new SyntaxHighlightSpan(scheme.getCommentColor(), start, end);
+                return new SyntaxSpan(scheme.getCommentColor(), start, end);
             case Method:
             case Function:
-                return new SyntaxHighlightSpan(scheme.getMethodColor(), start, end);
+                return new SyntaxSpan(scheme.getMethodColor(), start, end);
             case Include:
             case ConstBuiltin:
             case Boolean:
@@ -63,17 +63,17 @@ class JavaStyler extends TSLanguageStyler {
             case KeywordOperator:
             case Exception:
             case Keyword:
-                return new SyntaxHighlightSpan(scheme.getKeywordColor(), start, end);
+                return new SyntaxSpan(scheme.getKeywordColor(), start, end);
             case Float:
             case Number:
-                return new SyntaxHighlightSpan(scheme.getNumberColor(), start, end);
+                return new SyntaxSpan(scheme.getNumberColor(), start, end);
             case Operator:
-                return new SyntaxHighlightSpan(scheme.getOperatorColor(), start, end);
+                return new SyntaxSpan(scheme.getOperatorColor(), start, end);
             case Character:
             case String:
-                return new SyntaxHighlightSpan(scheme.getStringColor(), start, end);
+                return new SyntaxSpan(scheme.getStringColor(), start, end);
             case Type:
-                return new SyntaxHighlightSpan(scheme.getTypeColor(), start, end);
+                return new SyntaxSpan(scheme.getTypeColor(), start, end);
         }
         return null;
     }

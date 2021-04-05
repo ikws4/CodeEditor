@@ -4,7 +4,11 @@ import android.text.Editable;
 import android.text.Layout;
 import android.text.TextWatcher;
 
-class SyntaxTreeEditTextWatcher implements TextWatcher {
+/**
+ * To update the syntax tree to keep it in sync with the source code,
+ * save memory and improve parsing speed.
+ */
+class SyntaxTreeEditWatcher implements TextWatcher {
     private int startByte;
     private int oldEndByte;
     private int newEndByte;
@@ -16,7 +20,7 @@ class SyntaxTreeEditTextWatcher implements TextWatcher {
     private int newEndColumn;
     private final CodeEditor mCodeEditor;
 
-    SyntaxTreeEditTextWatcher(CodeEditor codeEditor) {
+    SyntaxTreeEditWatcher(CodeEditor codeEditor) {
         mCodeEditor = codeEditor;
     }
 

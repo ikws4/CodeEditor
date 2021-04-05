@@ -5,6 +5,7 @@ import android.view.KeyEvent;
 
 import io.ikws4.codeeditor.api.editor.EditorKeyListener;
 import io.ikws4.codeeditor.span.ReplacedSpan;
+import io.ikws4.codeeditor.span.TabSpan;
 
 /**
  * Handle base keyevent for indent.
@@ -14,6 +15,7 @@ public class EditorBaseKeyListener implements EditorKeyListener {
     @Override
     public void onKeyDown(CodeEditor editor, int keycode, KeyEvent event) {
         handleReplacedSpan(editor, keycode, event);
+        handleTapSpan(editor, keycode);
     }
 
     @Override
@@ -44,5 +46,21 @@ public class EditorBaseKeyListener implements EditorKeyListener {
                 }
             }
         }
+    }
+
+    private void handleTapSpan(CodeEditor editor, int keyCode) {
+//        Editable content = editor.getText();
+//        int nextLineStart = editor.getLayout().getLineStart(editor.getCurrentLine() + 1);
+//
+//        int start = editor.getSelectionStart();
+//        if (keyCode == KeyEvent.KEYCODE_ENTER) {
+//            TabSpan[] tabs = content.getSpans(start, content.length(), TabSpan.class);
+//
+//            for (TabSpan tab : tabs) {
+//                int s = content.getSpanStart(tab);
+//
+//                content.setSpan();
+//            }
+//        }
     }
 }
