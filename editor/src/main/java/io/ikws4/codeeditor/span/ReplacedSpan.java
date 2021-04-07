@@ -3,11 +3,11 @@ package io.ikws4.codeeditor.span;
 import android.text.NoCopySpan;
 import android.view.KeyEvent;
 
-import io.ikws4.codeeditor.CodeEditor;
-import io.ikws4.codeeditor.EditorBaseKeyListener;
+import io.ikws4.codeeditor.component.TextArea;
+import io.ikws4.codeeditor.api.language.ExtendedSpan;
 
 /**
- * It will be handle in {@link EditorBaseKeyListener#handleReplacedSpan(CodeEditor, int, KeyEvent)}
+ * It will be handle in {@link EditorBaseKeyListener#handleReplacedSpan(TextArea, int, KeyEvent)}
  */
 public class ReplacedSpan implements NoCopySpan, ExtendedSpan {
     private final char[] mText;

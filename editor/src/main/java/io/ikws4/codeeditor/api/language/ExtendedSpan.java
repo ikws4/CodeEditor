@@ -1,4 +1,4 @@
-package io.ikws4.codeeditor.span;
+package io.ikws4.codeeditor.api.language;
 
 public interface ExtendedSpan {
     int getStart();

@@ -7,6 +7,8 @@ import android.text.style.CharacterStyle;
 
 import androidx.annotation.ColorInt;
 
+import io.ikws4.codeeditor.api.language.ExtendedSpan;
+
 /**
  * A span that support {@link Typeface} and foreground color
  */

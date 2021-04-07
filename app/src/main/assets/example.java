@@ -130,7 +130,7 @@ abstract class SyntaxHighlightEditText extends NumberLineEditText {
         protected List<SyntaxSpan> doInBackground(Void... voids) {
             SyntaxHighlightEditText editor = mEditor.get();
             LanguageStyler h = editor.getLanguage().getStyler();
-            return h.highlight(editor.getText().toString(), editor.getColorScheme().getSyntaxScheme());
+            return h.process(editor.getText().toString(), editor.getColorScheme().getSyntaxScheme());
         }
 
         @Override

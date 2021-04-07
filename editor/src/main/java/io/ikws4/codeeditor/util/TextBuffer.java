@@ -1,21 +1,23 @@
-package io.ikws4.codeeditor;
+package io.ikws4.codeeditor.util;
 
 import android.text.Editable;
 import android.text.Spannable;
 
 import java.util.List;
 
-import io.ikws4.codeeditor.span.ExtendedSpan;
+import io.ikws4.codeeditor.api.language.ExtendedSpan;
 
 /**
  * A helper class for {@link Editable}
  */
-class TextBuffer {
+public class TextBuffer {
+    public static void setText(Editable content, CharSequence text) {
+        content.replace(0, content.length(), text);
+    }
 
     public static void setSpan(Editable content, ExtendedSpan span) {
         content.setSpan(span, span.getStart(), span.getEnd(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
     }
-
 
     /**
      * Clean span by given range (start, end)
@@ -60,24 +62,4 @@ class TextBuffer {
         }
         return l;
     }
-
-//    public static void shiftSpan(Editable content, int offset) {
-//        shiftSpan(content, 0, content.length(), offset);
-//    }
-//
-//    public static void shiftSpan(Editable content, int start, int offset) {
-//        shiftSpan(content, start, content.length(), offset);
-//    }
-//
-//    /**
-//     * Shift {@link ExtendedSpan} by given range and offset.
-//     */
-//    public static void shiftSpan(Editable content, int start, int end, int offset) {
-//        ExtendedSpan[] spans = content.getSpans(start, end, ExtendedSpan.class);
-//        for (ExtendedSpan span : spans) {
-//            span.shift(offset);
-//            content.removeSpan(span);
-//            setSpan(content, span);
-//        }
-//    }
 }

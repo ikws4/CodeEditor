@@ -7,9 +7,11 @@ import com.google.googlejavaformat.java.FormatterException;
 import com.google.googlejavaformat.java.JavaFormatterOptions;
 
 import io.ikws4.codeeditor.api.configuration.SyntaxColorScheme;
+import io.ikws4.codeeditor.api.language.ExtendedSpan;
 import io.ikws4.codeeditor.language.TSHighlightType;
 import io.ikws4.codeeditor.span.SyntaxSpan;
 import io.ikws4.codeeditor.language.TSLanguageStyler;
+import io.ikws4.codeeditor.span.TabSpan;
 import io.ikws4.jsitter.TSLanguages;
 
 class JavaStyler extends TSLanguageStyler {
@@ -44,7 +46,7 @@ class JavaStyler extends TSLanguageStyler {
     }
 
     @Override
-    protected SyntaxSpan onBuildSpan(TSHighlightType type, int start, int end, SyntaxColorScheme scheme) {
+    protected ExtendedSpan onBuildSpan(TSHighlightType type, int start, int end, SyntaxColorScheme scheme) {
         switch (type) {
             case Attribute:
                 return new SyntaxSpan(scheme.getAnnotationColor(), start, end);

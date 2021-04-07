@@ -2,7 +2,6 @@ package io.ikws4.codeeditor.component;
 
 import android.content.Context;
 import android.util.AttributeSet;
-import android.util.TypedValue;
 import android.view.LayoutInflater;
 import android.widget.FrameLayout;
 
@@ -10,13 +9,14 @@ import androidx.annotation.Nullable;
 
 import io.ikws4.codeeditor.CodeEditor;
 import io.ikws4.codeeditor.R;
-import io.ikws4.codeeditor.api.editor.EditorKeyboardEventListener;
+import io.ikws4.codeeditor.api.editor.component.Component;
+import io.ikws4.codeeditor.widget.KeyButton;
 
 /**
  * Provide such a arrow keys, and Tab key.
  */
-public class Toolbar extends FrameLayout {
-    private boolean mKeyboardShowing;
+public class Toolbar extends FrameLayout implements Component {
+    private boolean mKeyboardVisible;
 
     public Toolbar(Context context) {
         this(context, null);
@@ -28,12 +28,12 @@ public class Toolbar extends FrameLayout {
 
     public Toolbar(Context context, @Nullable AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
-        setElevation(TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 4, getResources().getDisplayMetrics()));
-        LayoutInflater.from(context).inflate(R.layout.keyboard_extension_bar, this, true);
+        LayoutInflater.from(context).inflate(R.layout.toolbar, this, true);
     }
 
+    @Override
     public void attach(CodeEditor editor) {
-        setBackgroundColor(editor.getConfiguration().getColorScheme().getBackgroundColor());
+        setBackgroundColor(editor.getColorScheme().getBackgroundColor());
 
         KeyButton tab = findViewById(R.id.tab);
         KeyButton up = findViewById(R.id.up);
@@ -42,28 +42,24 @@ public class Toolbar extends FrameLayout {
         KeyButton right = findViewById(R.id.right);
         KeyButton keyboardToggle = findViewById(R.id.keyboard_toggle);
 
-        up.setOnPressedListener(editor::selectionMoveUp);
-        down.setOnPressedListener(editor::selectionMoveDown);
-        left.setOnPressedListener(editor::selectionMoveLeft);
-        right.setOnPressedListener(editor::selectionMoveRight);
+        up.setOnPressedListener(editor::cursorMoveUp);
+        down.setOnPressedListener(editor::cursorMoveDown);
+        left.setOnPressedListener(editor::cursorMoveLeft);
+        right.setOnPressedListener(editor::cursorMoveRight);
         keyboardToggle.setOnPressedListener(() -> {
-            if (mKeyboardShowing) {
+            if (mKeyboardVisible) {
                 editor.hideSoftInput();
             } else {
                 editor.showSoftInput();
             }
         });
 
-        editor.addEditorKeyboardEventListener(new EditorKeyboardEventListener() {
-            @Override
-            public void onShow() {
-                mKeyboardShowing = true;
+        editor.addKeyboardListener(visible -> {
+            if (visible) {
+                mKeyboardVisible = true;
                 keyboardToggle.setImageResource(R.drawable.ic_keyboard_hide);
-            }
-
-            @Override
-            public void onHide() {
-                mKeyboardShowing = false;
+            } else {
+                mKeyboardVisible = false;
                 keyboardToggle.setImageResource(R.drawable.ic_keyboard);
             }
         });

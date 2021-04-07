@@ -55,5 +55,5 @@ public enum TSHighlightType {
     Type,
     TypeBuiltin,
     Variable,
-    VariableBuiltin
+    VariableBuiltin,
 }

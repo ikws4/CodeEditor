@@ -5,8 +5,8 @@ import java.util.HashMap;
 import java.util.List;
 
 import io.ikws4.codeeditor.api.configuration.SyntaxColorScheme;
+import io.ikws4.codeeditor.api.language.ExtendedSpan;
 import io.ikws4.codeeditor.api.language.LanguageStyler;
-import io.ikws4.codeeditor.span.SyntaxSpan;
 import io.ikws4.jsitter.TSNode;
 import io.ikws4.jsitter.TSParser;
 import io.ikws4.jsitter.TSQuery;
@@ -174,25 +174,24 @@ public abstract class TSLanguageStyler implements LanguageStyler {
     }
 
     @Override
-    public List<SyntaxSpan> highlight(String source, SyntaxColorScheme scheme) {
-        List<SyntaxSpan> spans = new ArrayList<>();
+    public List<ExtendedSpan> process(String source, SyntaxColorScheme scheme) {
+        List<ExtendedSpan> spans = new ArrayList<>();
         parse(source);
 
         for (TSQueryCapture capture : mHighlightQuery.captureIter(mTree.getRoot())) {
             TSNode node = capture.getNode();
-            SyntaxSpan span = onBuildSpan(hlmap.get(capture.getName()), node.getStartByte(), node.getEndByte(), scheme);
+            ExtendedSpan span = onBuildSpan(hlmap.get(capture.getName()), node.getStartByte(), node.getEndByte(), scheme);
             if (span != null) spans.add(span);
         }
 
         return spans;
     }
 
-    protected abstract SyntaxSpan onBuildSpan(TSHighlightType type, int start, int end, SyntaxColorScheme scheme);
+    protected abstract ExtendedSpan onBuildSpan(TSHighlightType type, int start, int end, SyntaxColorScheme scheme);
 
     private void parse(String source) {
         synchronized (this) {
             mTree = mParser.parse(source, mTree);
         }
     }
-
 }

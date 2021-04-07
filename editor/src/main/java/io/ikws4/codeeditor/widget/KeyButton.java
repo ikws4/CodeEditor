@@ -1,4 +1,4 @@
-package io.ikws4.codeeditor.component;
+package io.ikws4.codeeditor.widget;
 
 import android.content.Context;
 import android.util.AttributeSet;

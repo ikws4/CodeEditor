@@ -18,7 +18,7 @@ public class MainActivity extends AppCompatActivity {
         ActivityMainBinding binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
-        CodeEditor editor = binding.editor;
+        CodeEditor editor = binding.codeEditor;
         editor.setText(getExampleJavaSourceCode());
 
         binding.toolbar.setOnMenuItemClickListener((menu) -> {
@@ -35,7 +35,6 @@ public class MainActivity extends AppCompatActivity {
             return true;
         });
 
-        binding.keyboardBar.attach(editor);
     }
 
     private String getExampleJavaSourceCode() {
@@ -46,9 +45,9 @@ public class MainActivity extends AppCompatActivity {
             for (String line; (line = reader.readLine()) != null;) {
                 builder.append(line).append('\n');
             }
-            for (int i = 0; i < 3; i++) {
-                 builder.append(builder.toString());
-            }
+//            for (int i = 0; i < 6; i++) {
+//                 builder.append(builder.toString());
+//            }
             return builder.toString();
         } catch (Exception e) {
             return "";
