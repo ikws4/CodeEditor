@@ -4,9 +4,13 @@ import android.annotation.SuppressLint;
 import android.content.Context;
 import android.text.Editable;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.ScaleGestureDetector;
+import android.view.View;
+import android.view.ViewGroup;
+import android.view.ViewTreeObserver;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.FrameLayout;
 import android.widget.HorizontalScrollView;
@@ -14,6 +18,8 @@ import android.widget.ScrollView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.view.inputmethod.EditorInfoCompat;
+import androidx.core.widget.NestedScrollView;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -37,6 +43,8 @@ import io.ikws4.codeeditor.component.TextArea;
 import io.ikws4.codeeditor.component.Toolbar;
 import io.ikws4.codeeditor.configuration.Configuration;
 import io.ikws4.codeeditor.language.java.JavaLanguage;
+import io.ikws4.codeeditor.widget.HScrollView;
+import io.ikws4.codeeditor.widget.VScrollView;
 
 @SuppressLint("ClickableViewAccessibility")
 public class CodeEditor extends FrameLayout implements Editor, ScaleGestureDetector.OnScaleGestureListener, ScrollDelegate {
@@ -54,8 +62,8 @@ public class CodeEditor extends FrameLayout implements Editor, ScaleGestureDetec
     private final List<EditorScrollListener> mScrollListeners;
     private final List<EditorScaleListener> mScaleListeners;
 
-    private final HorizontalScrollView mHScrollView;
-    private final ScrollView mVScrollView;
+    private final HScrollView mHScrollView;
+    private final VScrollView mVScrollView;
     private final TextArea mTextArea;
     private final Toolbar mToolbar;
     private final Gutter mGutter;
@@ -87,29 +95,24 @@ public class CodeEditor extends FrameLayout implements Editor, ScaleGestureDetec
         mScrollListeners = new ArrayList<>();
         mScaleListeners = new ArrayList<>();
 
-        mHScrollView = findViewById(R.id.horizontalScrollView);
-        mVScrollView = findViewById(R.id.scrollView);
+        mHScrollView = findViewById(R.id.hScrollView);
+        mVScrollView = findViewById(R.id.vScrollView);
         mTextArea = findViewById(R.id.textArea);
         mToolbar = findViewById(R.id.toolbar);
         mGutter = findViewById(R.id.gutter);
-
-        // components
-        addComponent(mTextArea);
-        addComponent(mToolbar);
-        addComponent(mGutter);
 
         // scroll
         mHScrollView.setOnScrollChangeListener((v, scrollX, scrollY, oldScrollX, oldScrollY) -> {
             for (EditorScrollListener l : mScrollListeners) {
                 l.onScroll(scrollX, mScrollY, mScrollX, mScrollY);
-                mScrollX = scrollX;
             }
+            mScrollX = scrollX;
         });
         mVScrollView.setOnScrollChangeListener((v, scrollX, scrollY, oldScrollX, oldScrollY) -> {
             for (EditorScrollListener l : mScrollListeners) {
                 l.onScroll(mScrollX, scrollY, mScrollX, mScrollY);
-                mScrollY = scrollY;
             }
+            mScrollY = scrollY;
         });
         mHScrollView.setOnTouchListener((v, event) -> onTouchEvent(event));
         mVScrollView.setOnTouchListener((v, event) -> onTouchEvent(event));
@@ -118,12 +121,26 @@ public class CodeEditor extends FrameLayout implements Editor, ScaleGestureDetec
         mScaleGestureDetector = new ScaleGestureDetector(context, this);
 
         mIMM = (InputMethodManager) context.getSystemService(Context.INPUT_METHOD_SERVICE);
+
+        bindComponent(this);
+    }
+
+    private void bindComponent(ViewGroup root) {
+        for (int i = 0; i < root.getChildCount(); i++) {
+            View child = root.getChildAt(i);
+            if (child instanceof Component) {
+                addComponent((Component) child);
+            }
+            if (child instanceof ViewGroup) {
+                bindComponent((ViewGroup) child);
+            }
+        }
     }
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
         mScaleGestureDetector.onTouchEvent(event);
-        return super.onTouchEvent(event);
+        return false;
     }
 
     @Override

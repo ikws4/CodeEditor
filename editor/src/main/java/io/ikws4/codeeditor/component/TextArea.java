@@ -72,10 +72,8 @@ public class TextArea extends AppCompatMultiAutoCompleteTextView implements Scro
 
     private final List<EditorTextAreaListener> mTextAreaListeners;
 
-    // paint
     private final Paint mCursorLinePaint = new Paint();
 
-    // Format
     private FormatTask mFormatTask;
 
     // Span
@@ -126,10 +124,10 @@ public class TextArea extends AppCompatMultiAutoCompleteTextView implements Scro
     public void onResize(int w, int h, int oldw, int oldh) {
         mWidth = w;
         mHeight = h;
+
         handleTextAreaListener();
 
         post(this::updateSpan);
-
     }
 
     @Override
@@ -138,7 +136,7 @@ public class TextArea extends AppCompatMultiAutoCompleteTextView implements Scro
 
         if (mConfiguration.isPinchZoom()) {
             mScaleFactor *= factor;
-            mScaleFactor = Math.max(0.8f, Math.min(mScaleFactor, 1.2f));
+            mScaleFactor = Math.max(0.5f, Math.min(mScaleFactor, 1.5f));
             setTextSize(mConfiguration.getFontSize() * mScaleFactor);
 
             // Need to update the syntax because the visible area changed.
@@ -152,9 +150,9 @@ public class TextArea extends AppCompatMultiAutoCompleteTextView implements Scro
         mScrollX = x;
         mScrollY = y;
 
-        post(this::updateSpanWhenScroll);
-
         handleTextAreaListener();
+
+        post(this::updateSpanWhenScroll);
     }
 
     @Override

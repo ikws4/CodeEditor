@@ -40,7 +40,6 @@ public class KeyButton extends AppCompatImageButton implements Runnable, View.On
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
-        Log.d("", "onTouchEvent: " + event.getAction());
         switch (event.getAction()) {
             case MotionEvent.ACTION_UP:
             case MotionEvent.ACTION_CANCEL:

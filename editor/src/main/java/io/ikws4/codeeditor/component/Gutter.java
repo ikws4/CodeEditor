@@ -7,8 +7,8 @@ import android.graphics.Typeface;
 import android.text.Layout;
 import android.util.AttributeSet;
 import android.util.Log;
-import android.util.TypedValue;
 import android.view.View;
+import android.widget.ScrollView;
 
 import androidx.annotation.Nullable;
 
@@ -19,6 +19,8 @@ import io.ikws4.codeeditor.api.editor.EditorTextAreaListener;
 import io.ikws4.codeeditor.api.editor.component.Component;
 
 public class Gutter extends View implements Component, EditorScrollListener, EditorTextAreaListener {
+    private static final String TAG = "Gutter";
+
     private int mScrollY;
 
     private int mCurrentLine;
@@ -65,7 +67,10 @@ public class Gutter extends View implements Component, EditorScrollListener, Edi
 
     @Override
     public void onScroll(int x, int y, int oldx, int oldy) {
-        mScrollY = y;
+        if (mScrollY != y) {
+            mScrollY = y;
+            invalidate();
+        }
     }
 
     @Override
@@ -98,15 +103,24 @@ public class Gutter extends View implements Component, EditorScrollListener, Edi
 
     private void drawLineNumber(Canvas canvas) {
         for (int line = mTopLine; line <= mBottomLine; line++) {
+            String realLine = String.valueOf(line + 1);
             float x = getWidth() - getPaddingRight();
             float y = mLayout.getLineBaseline(line) - mScrollY;
-            canvas.drawText(String.valueOf(line + 1), x, y, line == mCurrentLine ? mActiveTextPaint : mTextPaint);
+            canvas.drawText(realLine, x, y, line == mCurrentLine ? mActiveTextPaint : mTextPaint);
         }
     }
 
     private void measureGutterWidth() {
         int lineCount = mLayout.getLineCount();
-        getLayoutParams().width = (int) (mTextPaint.measureText(String.valueOf(lineCount)));
+        String lineCountText = String.valueOf(lineCount);
+
+        // When the number digits are not equal, we need relayout.
+        // eg. when linenumber from 99 become to 100.
+        if (Math.log10(lineCount) != Math.log10(lineCount - 1)) {
+            requestLayout();
+        }
+
+        getLayoutParams().width = (int) (mTextPaint.measureText(lineCountText));
         getLayoutParams().width += getPaddingLeft() + getPaddingRight();
     }
 

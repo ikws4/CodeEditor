@@ -9,32 +9,25 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1">
+        android:layout_weight="1"
+        android:orientation="horizontal">
 
         <io.ikws4.codeeditor.component.Gutter
             android:id="@+id/gutter"
-            android:paddingLeft="8dp"
-            android:paddingRight="8dp"
             android:layout_width="wrap_content"
-            android:layout_height="match_parent"/>
-
-        <HorizontalScrollView
-            android:id="@+id/horizontalScrollView"
-            android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:fadingEdge="none"
-            android:fillViewport="true"
-            android:overScrollMode="never"
-            android:scrollbars="none">
+            android:paddingLeft="8dp"
+            android:paddingRight="8dp" />
 
-            <ScrollView
-                android:id="@+id/scrollView"
+        <io.ikws4.codeeditor.widget.HScrollView
+            android:id="@+id/hScrollView"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" >
+
+            <io.ikws4.codeeditor.widget.VScrollView
+                android:id="@+id/vScrollView"
                 android:layout_width="wrap_content"
-                android:layout_height="match_parent"
-                android:fadingEdge="none"
-                android:fillViewport="true"
-                android:overScrollMode="never"
-                android:scrollbars="none">
+                android:layout_height="match_parent" >
 
                 <io.ikws4.codeeditor.component.TextArea
                     android:id="@+id/textArea"
@@ -52,9 +45,9 @@
                     android:textCursorDrawable="@drawable/cursor"
                     android:textSelectHandle="@drawable/empty_text_select_handle" />
 
-            </ScrollView>
+            </io.ikws4.codeeditor.widget.VScrollView>
 
-        </HorizontalScrollView>
+        </io.ikws4.codeeditor.widget.HScrollView>
 
     </LinearLayout>
 
