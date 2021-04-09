@@ -3,31 +3,24 @@ package io.ikws4.codeeditor.component;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
+import android.graphics.Rect;
 import android.graphics.Typeface;
-import android.text.Layout;
 import android.util.AttributeSet;
-import android.util.Log;
+import android.util.TypedValue;
 import android.view.View;
-import android.widget.ScrollView;
 
 import androidx.annotation.Nullable;
 
-import io.ikws4.codeeditor.CodeEditor;
 import io.ikws4.codeeditor.api.configuration.ColorScheme;
-import io.ikws4.codeeditor.api.editor.EditorScrollListener;
-import io.ikws4.codeeditor.api.editor.EditorTextAreaListener;
+import io.ikws4.codeeditor.api.editor.Editor;
+import io.ikws4.codeeditor.api.editor.LayoutModel;
 import io.ikws4.codeeditor.api.editor.component.Component;
+import io.ikws4.codeeditor.api.editor.listener.ScaleListener;
+import io.ikws4.codeeditor.api.editor.listener.VisibleAreaListener;
 
-public class Gutter extends View implements Component, EditorScrollListener, EditorTextAreaListener {
-    private static final String TAG = "Gutter";
-
+public class Gutter extends View implements Component, VisibleAreaListener, ScaleListener {
+    private Editor mEditor;
     private int mScrollY;
-
-    private int mCurrentLine;
-    private int mTopLine;
-    private int mBottomLine;
-    private Layout mLayout;
-
     private final Paint mTextPaint = new Paint();
     private final Paint mActiveTextPaint = new Paint();
 
@@ -44,46 +37,49 @@ public class Gutter extends View implements Component, EditorScrollListener, Edi
     }
 
     @Override
-    public void attach(CodeEditor editor) {
+    public void attach(Editor editor) {
+        mEditor = editor;
+
         ColorScheme colorScheme = editor.getConfiguration().getColorScheme();
 
         setBackgroundColor(colorScheme.getGutterColor());
+        setTextSize(mEditor.getConfiguration().getFontSize() * mEditor.getScacleModel().getScaleFactor());
 
-        mTextPaint.setTextSize(editor.getTextSize());
         mTextPaint.setColor(colorScheme.getGutterTextColor());
         mTextPaint.setTypeface(Typeface.MONOSPACE);
         mTextPaint.setAntiAlias(true);
         mTextPaint.setTextAlign(Paint.Align.RIGHT);
 
-        mActiveTextPaint.setTextSize(editor.getTextSize());
         mActiveTextPaint.setColor(colorScheme.getGutterActiveTextColor());
         mActiveTextPaint.setTypeface(Typeface.MONOSPACE);
         mActiveTextPaint.setAntiAlias(true);
         mActiveTextPaint.setTextAlign(Paint.Align.RIGHT);
 
-        editor.addScrollListener(this);
-        editor.addTextAreaListener(this);
+        editor.getScrollingModel().addVisibleAreaListener(this);
+        editor.getScacleModel().addScaleListener(this);
     }
 
     @Override
-    public void onScroll(int x, int y, int oldx, int oldy) {
-        if (mScrollY != y) {
-            mScrollY = y;
+    public int getComponentWidth() {
+        return getWidth();
+    }
+
+    @Override
+    public int getComponentHeight() {
+        return getHeight();
+    }
+
+    @Override
+    public void onVisibleAreaChanged(Rect rect, Rect oldRect) {
+        if (mScrollY != rect.top) {
+            mScrollY = rect.top;
             invalidate();
         }
     }
 
     @Override
-    public void onTextAreaChanged(int topLine, int bottomLine, int currentLine, float textSize, @Nullable Layout layout) {
-        if (layout == null) return;
-
-        mTopLine = topLine;
-        mBottomLine = bottomLine;
-        mCurrentLine = currentLine;
-        mLayout = layout;
-        setTextSize(textSize);
-
-        invalidate();
+    public void onScaleChanged(float factor) {
+        setTextSize(mEditor.getConfiguration().getFontSize() * factor);
     }
 
     @Override
@@ -95,23 +91,26 @@ public class Gutter extends View implements Component, EditorScrollListener, Edi
 
     @Override
     protected void onDraw(Canvas canvas) {
-        if (mLayout == null) return;
-
         measureGutterWidth();
         drawLineNumber(canvas);
     }
 
     private void drawLineNumber(Canvas canvas) {
-        for (int line = mTopLine; line <= mBottomLine; line++) {
+        LayoutModel layout = mEditor.getLayoutModel();
+        int topLine = layout.getTopLine();
+        int bottomLine = layout.getBottomLine();
+        int currentLine = layout.getCurrentLine();
+
+        for (int line = topLine; line <= bottomLine; line++) {
             String realLine = String.valueOf(line + 1);
             float x = getWidth() - getPaddingRight();
-            float y = mLayout.getLineBaseline(line) - mScrollY;
-            canvas.drawText(realLine, x, y, line == mCurrentLine ? mActiveTextPaint : mTextPaint);
+            float y = mEditor.getLayoutModel().getLineBaseline(line) - mScrollY;
+            canvas.drawText(realLine, x, y, line == currentLine && !mEditor.isViwer() ? mActiveTextPaint : mTextPaint);
         }
     }
 
     private void measureGutterWidth() {
-        int lineCount = mLayout.getLineCount();
+        int lineCount = mEditor.getLayoutModel().getLineCount();
         String lineCountText = String.valueOf(lineCount);
 
         // When the number digits are not equal, we need relayout.
@@ -125,7 +124,8 @@ public class Gutter extends View implements Component, EditorScrollListener, Edi
     }
 
     private void setTextSize(float size) {
-        mTextPaint.setTextSize(size);
-        mActiveTextPaint.setTextSize(size);
+        float s = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, size, getResources().getDisplayMetrics());
+        mTextPaint.setTextSize(s);
+        mActiveTextPaint.setTextSize(s);
     }
 }

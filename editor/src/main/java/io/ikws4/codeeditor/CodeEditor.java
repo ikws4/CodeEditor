@@ -2,41 +2,35 @@ package io.ikws4.codeeditor;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
-import android.text.Editable;
+import android.graphics.Rect;
+import android.text.Layout;
+import android.text.Selection;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.ScaleGestureDetector;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.ViewTreeObserver;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.FrameLayout;
-import android.widget.HorizontalScrollView;
-import android.widget.ScrollView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.core.view.inputmethod.EditorInfoCompat;
-import androidx.core.widget.NestedScrollView;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-import javax.annotation.Nonnull;
-
 import io.ikws4.codeeditor.api.configuration.ColorScheme;
 import io.ikws4.codeeditor.api.editor.Editor;
-import io.ikws4.codeeditor.api.editor.EditorTextAreaListener;
+import io.ikws4.codeeditor.api.editor.LayoutModel;
+import io.ikws4.codeeditor.api.editor.ScaleModel;
+import io.ikws4.codeeditor.api.editor.ScrollingModel;
+import io.ikws4.codeeditor.api.editor.SelectionModel;
 import io.ikws4.codeeditor.api.editor.component.Component;
-import io.ikws4.codeeditor.api.editor.EditorKeyboardListener;
-import io.ikws4.codeeditor.api.editor.EditorResizeListener;
-import io.ikws4.codeeditor.api.editor.EditorScaleListener;
-import io.ikws4.codeeditor.api.editor.EditorScrollListener;
-import io.ikws4.codeeditor.api.editor.component.ScrollDelegate;
-import io.ikws4.codeeditor.api.editor.component.ScrollableComponent;
+import io.ikws4.codeeditor.api.editor.listener.ScaleListener;
+import io.ikws4.codeeditor.api.editor.listener.SelectionListener;
+import io.ikws4.codeeditor.api.editor.listener.VisibleAreaListener;
 import io.ikws4.codeeditor.api.language.Language;
 import io.ikws4.codeeditor.component.Gutter;
 import io.ikws4.codeeditor.component.TextArea;
@@ -47,7 +41,8 @@ import io.ikws4.codeeditor.widget.HScrollView;
 import io.ikws4.codeeditor.widget.VScrollView;
 
 @SuppressLint("ClickableViewAccessibility")
-public class CodeEditor extends FrameLayout implements Editor, ScaleGestureDetector.OnScaleGestureListener, ScrollDelegate {
+public class CodeEditor extends FrameLayout implements Editor, ScaleGestureDetector.OnScaleGestureListener,
+        SelectionModel, ScrollingModel, ScaleModel, LayoutModel {
     static {
         System.loadLibrary("jsitter");
     }
@@ -57,10 +52,9 @@ public class CodeEditor extends FrameLayout implements Editor, ScaleGestureDetec
     private Configuration mConfiguration;
     private Language mLanguage;
 
-    private final List<EditorKeyboardListener> mKeyboardListeners;
-    private final List<EditorResizeListener> mResizeListeners;
-    private final List<EditorScrollListener> mScrollListeners;
-    private final List<EditorScaleListener> mScaleListeners;
+    private final List<SelectionListener> mSelectionListeners;
+    private final List<VisibleAreaListener> mVisibleAreaListeners;
+    private final List<ScaleListener> mScaleListeners;
 
     private final HScrollView mHScrollView;
     private final VScrollView mVScrollView;
@@ -70,10 +64,22 @@ public class CodeEditor extends FrameLayout implements Editor, ScaleGestureDetec
 
     private final ScaleGestureDetector mScaleGestureDetector;
 
+    // visible area
     private int mScrollX;
     private int mScrollY;
+    private int mWidth;
+    private int mHeight;
+    private Rect mVisibleArea = new Rect();
+
+    // selection
+    private int mSelStart;
+    private int mSelEnd;
+
+    // scale
+    private float mScaleFactor = 1.0f;
 
     private final InputMethodManager mIMM;
+
 
     public CodeEditor(@NonNull Context context) {
         this(context, null);
@@ -90,10 +96,9 @@ public class CodeEditor extends FrameLayout implements Editor, ScaleGestureDetec
         mConfiguration = new Configuration();
         mLanguage = new JavaLanguage();
 
-        mKeyboardListeners = new ArrayList<>();
-        mResizeListeners = new ArrayList<>();
-        mScrollListeners = new ArrayList<>();
         mScaleListeners = new ArrayList<>();
+        mSelectionListeners = new ArrayList<>();
+        mVisibleAreaListeners = new ArrayList<>();
 
         mHScrollView = findViewById(R.id.hScrollView);
         mVScrollView = findViewById(R.id.vScrollView);
@@ -101,24 +106,29 @@ public class CodeEditor extends FrameLayout implements Editor, ScaleGestureDetec
         mToolbar = findViewById(R.id.toolbar);
         mGutter = findViewById(R.id.gutter);
 
-        // scroll
+        // delegate scroll and scale event
         mHScrollView.setOnScrollChangeListener((v, scrollX, scrollY, oldScrollX, oldScrollY) -> {
-            for (EditorScrollListener l : mScrollListeners) {
-                l.onScroll(scrollX, mScrollY, mScrollX, mScrollY);
-            }
             mScrollX = scrollX;
+            notifyVisibleAreaChanged();
         });
         mVScrollView.setOnScrollChangeListener((v, scrollX, scrollY, oldScrollX, oldScrollY) -> {
-            for (EditorScrollListener l : mScrollListeners) {
-                l.onScroll(mScrollX, scrollY, mScrollX, mScrollY);
-            }
             mScrollY = scrollY;
+            notifyVisibleAreaChanged();
         });
         mHScrollView.setOnTouchListener((v, event) -> onTouchEvent(event));
         mVScrollView.setOnTouchListener((v, event) -> onTouchEvent(event));
-
-        // scale
         mScaleGestureDetector = new ScaleGestureDetector(context, this);
+
+        // selection event
+        mTextArea.setOnSelectionChangedListener(this::notifySelectionChanged);
+
+        // for view model
+        if (isViwer()) {
+            mTextArea.setEnabled(false);
+            mTextArea.setFocusable(false);
+            mTextArea.setMovementMethod(null);
+            mToolbar.setVisibility(GONE);
+        }
 
         mIMM = (InputMethodManager) context.getSystemService(Context.INPUT_METHOD_SERVICE);
 
@@ -137,6 +147,34 @@ public class CodeEditor extends FrameLayout implements Editor, ScaleGestureDetec
         }
     }
 
+    private void addComponent(Component component) {
+        Objects.requireNonNull(component);
+        component.attach(this);
+    }
+
+    private void notifyVisibleAreaChanged() {
+        Rect visibleArea = new Rect(mScrollX, mScrollY, mScrollX + mWidth, mScrollY + mHeight);
+        for (VisibleAreaListener l : mVisibleAreaListeners) {
+            l.onVisibleAreaChanged(visibleArea, mVisibleArea);
+        }
+        mVisibleArea = visibleArea;
+    }
+
+    private void notifySelectionChanged(int start, int end) {
+        for (SelectionListener l : mSelectionListeners) {
+            l.onSelectionChanged(start, end, mSelStart, mSelEnd);
+        }
+        mSelStart = start;
+        mSelEnd = end;
+    }
+
+    private void notifyScaleChanged(float factor) {
+        mScaleFactor = Math.max(0.5f, Math.min(1.5f, mScaleFactor * factor));
+        for (ScaleListener l : mScaleListeners) {
+            l.onScaleChanged(mScaleFactor);
+        }
+    }
+
     @Override
     public boolean onTouchEvent(MotionEvent event) {
         mScaleGestureDetector.onTouchEvent(event);
@@ -150,9 +188,7 @@ public class CodeEditor extends FrameLayout implements Editor, ScaleGestureDetec
 
     @Override
     public boolean onScale(ScaleGestureDetector detector) {
-        for (EditorScaleListener l : mScaleListeners) {
-            l.onScale(detector.getScaleFactor());
-        }
+        notifyScaleChanged(detector.getScaleFactor());
         return true;
     }
 
@@ -162,12 +198,9 @@ public class CodeEditor extends FrameLayout implements Editor, ScaleGestureDetec
 
     @Override
     protected void onSizeChanged(int w, int h, int oldw, int oldh) {
-        for (EditorResizeListener l : mResizeListeners) {
-            l.onResize(w, h, oldw, oldh);
-        }
-        for (EditorKeyboardListener l : mKeyboardListeners) {
-            l.onKeyboardChanged(h < oldh);
-        }
+        mWidth = w;
+        mHeight = h;
+        notifyVisibleAreaChanged();
     }
 
     @NonNull
@@ -192,79 +225,50 @@ public class CodeEditor extends FrameLayout implements Editor, ScaleGestureDetec
     }
 
     @Override
-    public void setLangauge(@NonNull Language langauge) {
-        Objects.requireNonNull(langauge);
-        mLanguage = langauge;
+    public boolean isViwer() {
+        return false;
     }
 
-    /** @hide */
+    @NonNull
     @Override
-    public void addComponent(@NonNull Component component) {
-        Objects.requireNonNull(component);
-        if (component instanceof ScrollableComponent) {
-            ((ScrollableComponent) component).setScrollDelegate(this);
-        }
-        component.attach(this);
+    public SelectionModel getSelectionModel() {
+        return this;
     }
 
+    @NonNull
     @Override
-    public void addScrollListener(@NonNull EditorScrollListener l) {
-        Objects.requireNonNull(l);
-        mScrollListeners.add(l);
+    public ScrollingModel getScrollingModel() {
+        return this;
     }
 
+    @NonNull
     @Override
-    public void removeScrollListener(@NonNull EditorScrollListener l) {
-        Objects.requireNonNull(l);
-        mScrollListeners.remove(l);
+    public ScaleModel getScacleModel() {
+        return this;
     }
 
+    @NonNull
     @Override
-    public void addKeyboardListener(@NonNull EditorKeyboardListener l) {
-        Objects.requireNonNull(l);
-        mKeyboardListeners.add(l);
+    public LayoutModel getLayoutModel() {
+        return this;
     }
 
     @Override
-    public void removeKeyboardListener(@NonNull EditorKeyboardListener l) {
-        Objects.requireNonNull(l);
-        mKeyboardListeners.remove(l);
+    public void showSoftInput() {
+        mIMM.showSoftInput(mTextArea, 0);
     }
 
     @Override
-    public void addResizeListener(@Nonnull EditorResizeListener l) {
-        Objects.requireNonNull(l);
-        mResizeListeners.add(l);
+    public void hideSoftInput() {
+        mIMM.hideSoftInputFromWindow(getWindowToken(), 0);
     }
 
+    ///////////////////////////////////////////////////////////////////////////
+    // ScrollingModel
+    ///////////////////////////////////////////////////////////////////////////
     @Override
-    public void removeResizeListener(@Nonnull EditorResizeListener l) {
-        Objects.requireNonNull(l);
-        mResizeListeners.remove(l);
-    }
-
-    @Override
-    public void addScaleListener(@Nonnull EditorScaleListener l) {
-        Objects.requireNonNull(l);
-        mScaleListeners.add(l);
-    }
-
-    @Override
-    public void removeScaleListener(@Nonnull EditorScaleListener l) {
-        Objects.requireNonNull(l);
-        mScaleListeners.remove(l);
-    }
-
-    @Override
-    public void addTextAreaListener(@NonNull EditorTextAreaListener l) {
-        Objects.requireNonNull(l);
-        mTextArea.addTextAreaListener(l);
-    }
-
-    @Override
-    public void removeTextAreaListener(@NonNull EditorTextAreaListener l) {
-        Objects.requireNonNull(l);
-        mTextArea.removeTextAreaListener(l);
+    public void scrollToCaret() {
+        mTextArea.scrollTo(getScrollX(), getLineBaseline(getCurrentLine()));
     }
 
     @Override
@@ -277,6 +281,170 @@ public class CodeEditor extends FrameLayout implements Editor, ScaleGestureDetec
     public void scrollBy(int x, int y) {
         mVScrollView.scrollBy(0, y);
         mHScrollView.scrollBy(x, 0);
+    }
+
+    @NonNull
+    @Override
+    public Rect getVisibleArea() {
+        return mVisibleArea;
+    }
+
+    @Override
+    public void addVisibleAreaListener(@NonNull VisibleAreaListener l) {
+        Objects.requireNonNull(l);
+        mVisibleAreaListeners.add(l);
+    }
+
+    @Override
+    public void removeVisibleAreaListener(@NonNull VisibleAreaListener l) {
+        Objects.requireNonNull(l);
+        mVisibleAreaListeners.remove(l);
+    }
+
+    ///////////////////////////////////////////////////////////////////////////
+    // SelectionModel
+    ///////////////////////////////////////////////////////////////////////////
+    @Override
+    public int getSelectionStart() {
+        return mTextArea.getSelectionStart();
+    }
+
+    @Override
+    public int getSelectionEnd() {
+        return mTextArea.getSelectionEnd();
+    }
+
+    @NonNull
+    @Override
+    public CharSequence getSelectionText() {
+        return mTextArea.getText().subSequence(getSelectionStart(), getSelectionEnd());
+    }
+
+    @Override
+    public boolean hasSelection() {
+        return mTextArea.hasSelection();
+    }
+
+    @Override
+    public void setSelection(int startOffset, int endOffset) {
+        mTextArea.setSelection(startOffset, endOffset);
+    }
+
+    @Override
+    public void removeSelection() {
+        Selection.removeSelection(mTextArea.getText());
+    }
+
+    @Override
+    public void addSelectionListener(@NonNull SelectionListener l) {
+        Objects.requireNonNull(l);
+        mSelectionListeners.add(l);
+    }
+
+    @Override
+    public void removeSelectionListener(@NonNull SelectionListener l) {
+        Objects.requireNonNull(l);
+        mSelectionListeners.remove(l);
+    }
+
+    @Override
+    public void selectionLineAtCaret() {
+        Layout layout = mTextArea.getLayout();
+        if (layout != null) {
+            int line = mTextArea.getCurrentLine();
+            int startOffset = layout.getLineStart(line);
+            int endOffset = layout.getLineEnd(line);
+            mTextArea.setSelection(startOffset, endOffset);
+        }
+    }
+
+    @Override
+    public void moveUp() {
+        focusIfNot();
+        mTextArea.caretMoveUp();
+    }
+
+    @Override
+    public void moveDown() {
+        focusIfNot();
+        mTextArea.caretMoveDown();
+    }
+
+    @Override
+    public void moveLeft() {
+        focusIfNot();
+        mTextArea.caretMoveLeft();
+    }
+
+    @Override
+    public void moveRight() {
+        focusIfNot();
+        mTextArea.caretMoveRight();
+    }
+
+    /**
+     * If the {@link TextArea} is not focus, then request focus.
+     */
+    private void focusIfNot() {
+        if (!mTextArea.hasFocus()) {
+            mTextArea.requestFocus();
+        }
+    }
+
+    ///////////////////////////////////////////////////////////////////////////
+    // ScaleModel
+    ///////////////////////////////////////////////////////////////////////////
+    @Override
+    public float getScaleFactor() {
+        return mScaleFactor;
+    }
+
+    @Override
+    public void addScaleListener(@NonNull ScaleListener l) {
+        Objects.requireNonNull(l);
+        mScaleListeners.add(l);
+    }
+
+    @Override
+    public void removeScaleListener(@NonNull ScaleListener l) {
+        Objects.requireNonNull(l);
+        mScaleListeners.remove(l);
+    }
+
+    ///////////////////////////////////////////////////////////////////////////
+    // Layout
+    ///////////////////////////////////////////////////////////////////////////
+    @Override
+    public int getLineBaseline(int line) {
+        return mTextArea.getLayout().getLineBaseline(line);
+    }
+
+    @Override
+    public int getCurrentLine() {
+        return mTextArea.getCurrentLine();
+    }
+
+    @Override
+    public int getTopLine() {
+        return mTextArea.getTopLine();
+    }
+
+    @Override
+    public int getBottomLine() {
+        return mTextArea.getBottomLine();
+    }
+
+    @Override
+    public int getLineCount() {
+        return mTextArea.getLineCount();
+    }
+
+    ///////////////////////////////////////////////////////////////////////////
+    // Others
+    ///////////////////////////////////////////////////////////////////////////
+    public void setLangauge(@NonNull Language langauge) {
+        Objects.requireNonNull(langauge);
+        mLanguage = langauge;
     }
 
     public void cut() {
@@ -299,22 +467,6 @@ public class CodeEditor extends FrameLayout implements Editor, ScaleGestureDetec
         mTextArea.replace();
     }
 
-    public void cursorMoveUp() {
-        mTextArea.cursorMoveUp();
-    }
-
-    public void cursorMoveDown() {
-        mTextArea.cursorMoveDown();
-    }
-
-    public void cursorMoveLeft() {
-        mTextArea.cursorMoveLeft();
-    }
-
-    public void cursorMoveRight() {
-        mTextArea.cursorMoveRight();
-    }
-
     public void format() {
         mTextArea.format();
     }
@@ -325,17 +477,5 @@ public class CodeEditor extends FrameLayout implements Editor, ScaleGestureDetec
 
     public CharSequence getText() {
         return mTextArea.getText();
-    }
-
-    public float getTextSize() {
-        return mTextArea.getTextSize();
-    }
-
-    public void showSoftInput() {
-        mIMM.showSoftInput(mTextArea, 0);
-    }
-
-    public void hideSoftInput() {
-        mIMM.hideSoftInputFromWindow(getWindowToken(), 0);
     }
 }

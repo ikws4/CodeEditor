@@ -20,4 +20,9 @@ public class VScrollView extends ScrollView {
         setOverScrollMode(OVER_SCROLL_NEVER);
         setFillViewport(true);
     }
+
+    @Override
+    public void fling(int velocityY) {
+        super.fling(velocityY);
+    }
 }

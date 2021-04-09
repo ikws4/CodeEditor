@@ -2,18 +2,16 @@ package io.ikws4.codeeditor.api.editor;
 
 import androidx.annotation.NonNull;
 
-import javax.annotation.Nonnull;
-
 import io.ikws4.codeeditor.api.configuration.ColorScheme;
-import io.ikws4.codeeditor.api.editor.component.Component;
 import io.ikws4.codeeditor.api.language.Language;
 import io.ikws4.codeeditor.configuration.Configuration;
 
 public interface Editor {
     @NonNull
-    Configuration getConfiguration();
+    CharSequence getText();
 
-    void setConfiguration(@NonNull Configuration configuration);
+    @NonNull
+    Configuration getConfiguration();
 
     @NonNull
     ColorScheme getColorScheme();
@@ -21,27 +19,39 @@ public interface Editor {
     @NonNull
     Language getLanguage();
 
-    void setLangauge(@NonNull Language langauge);
+    /**
+     * Returns the value indicating whether the editor operates in viewer mode, with
+     * all modification actions disabled.
+     *
+     * @return true if the editor works as a viewer, false otherwise
+     */
+    boolean isViwer();
 
-    void addComponent(@NonNull Component component);
+    /**
+     * Returns the selection model for the editor, which can be used to select ranges of text in
+     * the document and retrieve information about the selection.
+     *
+     * @return the selection model instance.
+     */
+    @NonNull
+    SelectionModel getSelectionModel();
 
-    void addScrollListener(@NonNull EditorScrollListener l);
+    /**
+     * Returns the scrolling model for the document, which can be used to scroll the document
+     * and retrieve information about the current position of the scrollbars.
+     *
+     * @return the scrolling model instance.
+     */
+    @NonNull
+    ScrollingModel getScrollingModel();
 
-    void removeScrollListener(@NonNull EditorScrollListener l);
+    @NonNull
+    ScaleModel getScacleModel();
 
-    void addKeyboardListener(@NonNull EditorKeyboardListener l);
+    @NonNull
+    LayoutModel getLayoutModel();
 
-    void removeKeyboardListener(@NonNull EditorKeyboardListener l);
+    void hideSoftInput();
 
-    void addResizeListener(@Nonnull EditorResizeListener l);
-
-    void removeResizeListener(@Nonnull EditorResizeListener l);
-
-    void addScaleListener(@Nonnull EditorScaleListener l);
-
-    void removeScaleListener(@Nonnull EditorScaleListener l);
-
-    void addTextAreaListener(@NonNull EditorTextAreaListener l);
-
-    void removeTextAreaListener(@NonNull EditorTextAreaListener l);
+    void showSoftInput();
 }

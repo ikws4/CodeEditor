@@ -5,13 +5,14 @@ import android.text.Editable;
 
 import java.lang.ref.WeakReference;
 
+import io.ikws4.codeeditor.api.editor.Editor;
 import io.ikws4.codeeditor.component.TextArea;
 
 public class FormatTask extends AsyncTask<Void, Void, String> {
-    private final WeakReference<TextArea> mEditor;
+    private final WeakReference<Editor> mEditor;
     private final OnTaskFinishedListener<String> mListener;
 
-    public FormatTask(TextArea editor, OnTaskFinishedListener<String> listener) {
+    public FormatTask(Editor editor, OnTaskFinishedListener<String> listener) {
         super();
         mEditor = new WeakReference<>(editor);
         mListener = listener;
@@ -19,8 +20,8 @@ public class FormatTask extends AsyncTask<Void, Void, String> {
 
     @Override
     protected String doInBackground(Void... voids) {
-        TextArea editor = mEditor.get();
-        Editable content = editor.getText();
+        Editor editor = mEditor.get();
+        CharSequence content = editor.getText();
         return editor.getLanguage().getStyler().format(content.toString());
     }
 

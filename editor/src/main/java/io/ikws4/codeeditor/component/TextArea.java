@@ -3,6 +3,7 @@ package io.ikws4.codeeditor.component;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
+import android.graphics.Rect;
 import android.graphics.Typeface;
 import android.graphics.drawable.ColorDrawable;
 import android.os.Build;
@@ -13,7 +14,6 @@ import android.text.TextWatcher;
 import android.text.method.ArrowKeyMovementMethod;
 import android.text.method.Touch;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.util.TypedValue;
 import android.view.ActionMode;
 import android.view.Gravity;
@@ -37,47 +37,37 @@ import androidx.appcompat.widget.AppCompatMultiAutoCompleteTextView;
 import java.util.ArrayList;
 import java.util.List;
 
-import io.ikws4.codeeditor.CodeEditor;
 import io.ikws4.codeeditor.R;
 import io.ikws4.codeeditor.api.configuration.ColorScheme;
-import io.ikws4.codeeditor.api.editor.EditorResizeListener;
-import io.ikws4.codeeditor.api.editor.EditorScaleListener;
-import io.ikws4.codeeditor.api.editor.EditorScrollListener;
-import io.ikws4.codeeditor.api.editor.EditorTextAreaListener;
-import io.ikws4.codeeditor.api.editor.component.ScrollDelegate;
-import io.ikws4.codeeditor.api.editor.component.ScrollableComponent;
+import io.ikws4.codeeditor.api.editor.Editor;
+import io.ikws4.codeeditor.api.editor.component.Component;
+import io.ikws4.codeeditor.api.editor.listener.ScaleListener;
+import io.ikws4.codeeditor.api.editor.listener.VisibleAreaListener;
 import io.ikws4.codeeditor.api.language.ExtendedSpan;
-import io.ikws4.codeeditor.api.language.Language;
 import io.ikws4.codeeditor.api.language.Suggestion;
-import io.ikws4.codeeditor.configuration.Configuration;
 import io.ikws4.codeeditor.language.TSLanguageStyler;
 import io.ikws4.codeeditor.span.ReplacedSpan;
 import io.ikws4.codeeditor.span.TabSpan;
 import io.ikws4.codeeditor.task.FormatTask;
-import io.ikws4.codeeditor.task.ProcessSpanTask;
+import io.ikws4.codeeditor.task.ParsingSpanTask;
 import io.ikws4.codeeditor.util.TextBuffer;
 
-public class TextArea extends AppCompatMultiAutoCompleteTextView implements ScrollableComponent, EditorResizeListener, EditorScaleListener, EditorScrollListener {// load jsitter for syntax highlight and indent.
-    private static final String TAG = "TextEditor";
+public class TextArea extends AppCompatMultiAutoCompleteTextView implements Component, VisibleAreaListener, ScaleListener {// load jsitter for syntax highlight and indent.
+    private Editor mEditor;
 
-    private Configuration mConfiguration;
-    private Language mLanguage;
-
-    private ScrollDelegate mScrollDelegate;
-    private float mScaleFactor = 1.0f;
     private int mScrollX = 0;
     private int mScrollY = 0;
     private int mWidth = 0;
     private int mHeight = 0;
 
-    private final List<EditorTextAreaListener> mTextAreaListeners;
+    private OnSelectionChangedListener mSelectionChangedListener;
 
     private final Paint mCursorLinePaint = new Paint();
 
     private FormatTask mFormatTask;
 
     // Span
-    private ProcessSpanTask mProcessSpanTask;
+    private ParsingSpanTask mParsingSpanTask;
     private final List<ExtendedSpan> mSpans;
     private boolean isUpdatingSpan = false;
     private int mTopLineStart;
@@ -88,8 +78,7 @@ public class TextArea extends AppCompatMultiAutoCompleteTextView implements Scro
     // Completion menu
     private final SuggestionAdapter mSuggestionAdapter;
     private final WordTokenizer mWordTokenizer;
-    private final int mCompletionMenuXOffset = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 8, getResources().getDisplayMetrics());
-
+    private final int mCompletionMenuHorizontalPadding = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 8, getResources().getDisplayMetrics());
 
     public TextArea(@NonNull Context context) {
         this(context, null);
@@ -101,76 +90,65 @@ public class TextArea extends AppCompatMultiAutoCompleteTextView implements Scro
 
     public TextArea(@NonNull Context context, @Nullable AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
-        mTextAreaListeners = new ArrayList<>();
         mSpans = new ArrayList<>();
         mSuggestionAdapter = new SuggestionAdapter(context);
         mWordTokenizer = new WordTokenizer();
     }
 
     @Override
-    public void attach(CodeEditor editor) {
-        mConfiguration = editor.getConfiguration();
-        mLanguage = editor.getLanguage();
+    public void attach(Editor editor) {
+        mEditor = editor;
 
-        editor.addResizeListener(this);
-        editor.addScaleListener(this);
-        editor.addScrollListener(this);
+        editor.getScacleModel().addScaleListener(this);
+        editor.getScrollingModel().addVisibleAreaListener(this);
 
         configure();
         colorize();
     }
 
     @Override
-    public void onResize(int w, int h, int oldw, int oldh) {
-        mWidth = w;
-        mHeight = h;
-
-        handleTextAreaListener();
-
-        post(this::updateSpan);
+    public int getComponentWidth() {
+        return mWidth;
     }
 
     @Override
-    public void onScale(float factor) {
-        handleTextAreaListener();
+    public int getComponentHeight() {
+        return mHeight;
+    }
 
-        if (mConfiguration.isPinchZoom()) {
-            mScaleFactor *= factor;
-            mScaleFactor = Math.max(0.5f, Math.min(mScaleFactor, 1.5f));
-            setTextSize(mConfiguration.getFontSize() * mScaleFactor);
+    @Override
+    public void onVisibleAreaChanged(Rect rect, Rect oldRect) {
+        if (rect.width() != mWidth || rect.height() != mHeight) {
+            mWidth = rect.width();
+            mHeight = rect.height();
 
-            // Need to update the syntax because the visible area changed.
-            post(TextArea.this::updateSpan);
+            updateSpan();
+        }
+
+        if (rect.top != mScrollY || rect.right != mScrollX) {
+            // notify EditText scroll changed.
+            super.onScrollChanged(rect.left, rect.top, oldRect.left, oldRect.top);
+
+            mScrollX = rect.left;
+            mScrollY = rect.top;
+
+            updateSpanWhenScroll();
         }
     }
 
     @Override
-    public void onScroll(int x, int y, int oldx, int oldy) {
-        super.onScrollChanged(x, y, oldx, oldy);
-        mScrollX = x;
-        mScrollY = y;
-
-        handleTextAreaListener();
-
-        post(this::updateSpanWhenScroll);
+    public void onScaleChanged(float factor) {
+        if (mEditor.getConfiguration().isPinchZoom()) {
+            setTextSize(mEditor.getConfiguration().getFontSize() * factor);
+        }
     }
 
     @Override
     protected void onSelectionChanged(int selStart, int selEnd) {
         super.onSelectionChanged(selStart, selEnd);
-
-        handleTextAreaListener();
-    }
-
-    @NonNull
-    @Override
-    public ScrollDelegate getScrollDelegate() {
-        return mScrollDelegate;
-    }
-
-    @Override
-    public void setScrollDelegate(@NonNull ScrollDelegate delegate) {
-        mScrollDelegate = delegate;
+        if (mSelectionChangedListener != null) {
+            mSelectionChangedListener.onSelectionChanged(selStart, selEnd);
+        }
     }
 
     @Override
@@ -185,13 +163,12 @@ public class TextArea extends AppCompatMultiAutoCompleteTextView implements Scro
         return super.onKeyUp(keyCode, event);
     }
 
-
     ///////////////////////////////////////////////////////////////////////////
     // Configuration
     ///////////////////////////////////////////////////////////////////////////
     protected void configure() {
         // Text & font
-        setTextSize(mConfiguration.getFontSize());
+        setTextSize(mEditor.getConfiguration().getFontSize());
         setTypeface(Typeface.MONOSPACE);
         setLineSpacing(0, 1.1f);
         setGravity(Gravity.TOP | Gravity.START);
@@ -208,7 +185,7 @@ public class TextArea extends AppCompatMultiAutoCompleteTextView implements Scro
         }
 
         // Wrap
-        setHorizontallyScrolling(!mConfiguration.isWrap());
+        setHorizontallyScrolling(!mEditor.getConfiguration().isWrap());
 
         // Clipboard panel & key handle
         setMovementMethod(MovementMethod.getInstance());
@@ -216,11 +193,11 @@ public class TextArea extends AppCompatMultiAutoCompleteTextView implements Scro
         setCustomSelectionActionModeCallback(new SelectionActiomModeCallback());
 
         // Completion menu
-        if (mConfiguration.isCompletion()) {
+        if (mEditor.getConfiguration().isCompletion()) {
             setThreshold(1);
             setAdapter(mSuggestionAdapter);
             setTokenizer(mWordTokenizer);
-            mSuggestionAdapter.setData(mLanguage.getSuggestionProvider().getAll());
+            mSuggestionAdapter.setData(mEditor.getLanguage().getSuggestionProvider().getAll());
         } else {
             setAdapter(null);
             setTokenizer(null);
@@ -228,7 +205,7 @@ public class TextArea extends AppCompatMultiAutoCompleteTextView implements Scro
     }
 
     protected void colorize() {
-        ColorScheme colorScheme = mConfiguration.getColorScheme();
+        ColorScheme colorScheme = mEditor.getColorScheme();
 
         // TextEdit configure
         setTextColor(colorScheme.getTextColor());
@@ -241,7 +218,6 @@ public class TextArea extends AppCompatMultiAutoCompleteTextView implements Scro
 
         mCursorLinePaint.setColor(colorScheme.getCursorLineColor());
     }
-
 
     ///////////////////////////////////////////////////////////////////////////
     // TextWatcher
@@ -283,7 +259,7 @@ public class TextArea extends AppCompatMultiAutoCompleteTextView implements Scro
 
         @Override
         public void afterTextChanged(Editable s) {
-            mLanguage.getStyler().editSyntaxTree(startByte, oldEndByte, newEndByte,
+            mEditor.getLanguage().getStyler().editSyntaxTree(startByte, oldEndByte, newEndByte,
                     startRow, startColumn,
                     oldEndRow, oldEndColumn,
                     newEndRow, newEndColumn);
@@ -296,7 +272,7 @@ public class TextArea extends AppCompatMultiAutoCompleteTextView implements Scro
         @Override
         public void beforeTextChanged(CharSequence s, int start, int count, int after) {
             addedTextCount -= count;
-            stopHighlightTask();
+            stopParsingSpan();
         }
 
         @Override
@@ -309,7 +285,7 @@ public class TextArea extends AppCompatMultiAutoCompleteTextView implements Scro
             if (!isUpdatingSpan) {
                 TextBuffer.shiftSpans(mSpans, getSelectionStart(), addedTextCount);
             }
-            startHighlightTask();
+            startParsingSpan();
             addedTextCount = 0;
         }
     }
@@ -390,7 +366,7 @@ public class TextArea extends AppCompatMultiAutoCompleteTextView implements Scro
         }
 
         private void handleIndent(TextArea textArea, int keyCode, KeyEvent event) {
-            if (!textArea.getConfiguration().isAutoIndent()) return;
+            if (!textArea.mEditor.getConfiguration().isAutoIndent()) return;
 
             if (keyCode == KeyEvent.KEYCODE_ENTER && (event.hasNoModifiers())) {
                 textArea.indent(textArea.getCurrentLine());
@@ -445,13 +421,12 @@ public class TextArea extends AppCompatMultiAutoCompleteTextView implements Scro
         private static MovementMethod sInstance;
     }
 
-
     ///////////////////////////////////////////////////////////////////////////
     // Draw
     ///////////////////////////////////////////////////////////////////////////
     @Override
     protected void onDraw(Canvas canvas) {
-        if (mConfiguration.isCursorLine()) {
+        if (mEditor.getConfiguration().isCursorLine() && !mEditor.isViwer()) {
             drawCursorLine(canvas);
         }
         super.onDraw(canvas);
@@ -468,7 +443,6 @@ public class TextArea extends AppCompatMultiAutoCompleteTextView implements Scro
 
         canvas.drawRect(left, top, right, bottom, mCursorLinePaint);
     }
-
 
     ///////////////////////////////////////////////////////////////////////////
     // Completion menu
@@ -494,21 +468,18 @@ public class TextArea extends AppCompatMultiAutoCompleteTextView implements Scro
         if (!hasLayout()) return;
 
         int currentLine = getCurrentLine();
-        int x = (int) (getLayout().getPrimaryHorizontal(mWordTokenizer.findTokenStart(getText(), getSelectionStart())) + getPaddingLeft()) - mCompletionMenuXOffset;
+        int x = (int) (getLayout().getPrimaryHorizontal(mWordTokenizer.findTokenStart(getText(), getSelectionStart())) + getPaddingLeft()) - mCompletionMenuHorizontalPadding;
         int y = getLayout().getLineBottom(currentLine) + getDropDownHeight();
         int deltaX = x - mScrollX;
         int deltaY = y - mScrollY;
 
         if (deltaY > mHeight) {
-            if (mScrollDelegate != null) {
-                mScrollDelegate.scrollBy(0, deltaY - mHeight + getLineHeight());
-            }
+            mEditor.getScrollingModel().scrollBy(0, deltaY - mHeight + getLineHeight());
         }
 
+        // FIXME: completion menu horizontal gap not working well, need fix
         if (deltaX > mWidth - getDropDownWidth()) {
-            if (mScrollDelegate != null) {
-                mScrollDelegate.scrollBy(x + getDropDownWidth(), 0);
-            }
+            mEditor.getScrollingModel().scrollBy(x + getDropDownWidth(), 0);
         }
 
         setDropDownHorizontalOffset(x);
@@ -618,10 +589,26 @@ public class TextArea extends AppCompatMultiAutoCompleteTextView implements Scro
         }
     }
 
-
     ///////////////////////////////////////////////////////////////////////////
     // Span
     ///////////////////////////////////////////////////////////////////////////
+    private void startParsingSpan() {
+        stopParsingSpan();
+
+        mParsingSpanTask = new ParsingSpanTask(mEditor, spans -> {
+            mSpans.clear();
+            mSpans.addAll(spans);
+            updateSpan();
+        });
+
+        mParsingSpanTask.execute();
+    }
+
+    private void stopParsingSpan() {
+        if (mParsingSpanTask != null) {
+            mParsingSpanTask.cancel(true);
+        }
+    }
 
     /**
      * Update the span on the current visiable area.
@@ -690,60 +677,23 @@ public class TextArea extends AppCompatMultiAutoCompleteTextView implements Scro
         isUpdatingSpan = false;
     }
 
-
-    ///////////////////////////////////////////////////////////////////////////
-    // Task
-    ///////////////////////////////////////////////////////////////////////////
-    private void startHighlightTask() {
-        if (mLanguage == null) return;
-
-        stopHighlightTask();
-
-        mProcessSpanTask = new ProcessSpanTask(this, spans -> {
-            mSpans.clear();
-            mSpans.addAll(spans);
-            updateSpan();
-        });
-
-        mProcessSpanTask.execute();
-    }
-
-    private void stopHighlightTask() {
-        if (mProcessSpanTask != null) {
-            mProcessSpanTask.cancel(true);
-        }
-    }
-
-
     ///////////////////////////////////////////////////////////////////////////
     // Helper function
     ///////////////////////////////////////////////////////////////////////////
-    /* package */ int getCurrentLine() {
-        return hasLayout() ? getLayout().getLineForOffset(getSelectionStart()) : 0;
-    }
-
     /**
      * Indent by given line
      *
      * @see TSLanguageStyler#getIndentLevel(int, int)
      */
-    /* package */ void indent(int line) {
+    private void indent(int line) {
         Editable content = getText();
         int currentLine = getCurrentLine();
-        int level = mLanguage.getStyler().getIndentLevel(currentLine, getPrevnonblankLine());
-        String tab = mConfiguration.getIndentation().get(level);
+        int level = mEditor.getLanguage().getStyler().getIndentLevel(currentLine, getPrevnonblankLine());
+        String tab = mEditor.getConfiguration().getIndentation().get(level);
 
         int start = getLayout().getLineStart(line);
         content.insert(start, tab);
-        TextBuffer.setSpan(content, new TabSpan(tab, mConfiguration.getColorScheme().getIndentColor(), start, getSelectionEnd()));
-    }
-
-    private int getTopLine() {
-        return hasLayout() ? getLayout().getLineForVertical(mScrollY) : 0;
-    }
-
-    private int getBottomLine() {
-        return hasLayout() ? getLayout().getLineForVertical(mScrollY + mHeight) : 0;
+        TextBuffer.setSpan(content, new TabSpan(tab, mEditor.getColorScheme().getIndentColor(), start, getSelectionEnd()));
     }
 
     /**
@@ -780,24 +730,19 @@ public class TextArea extends AppCompatMultiAutoCompleteTextView implements Scro
         return getLayout() != null;
     }
 
-    private void handleTextAreaListener() {
-        if (mTextAreaListeners == null) return;
-
-        for (EditorTextAreaListener l : mTextAreaListeners) {
-            l.onTextAreaChanged(getTopLine(), getBottomLine(), getCurrentLine(), getTextSize(), getLayout());
-        }
-    }
-
-
     ///////////////////////////////////////////////////////////////////////////
     // Public function (api)
     ///////////////////////////////////////////////////////////////////////////
-    public Configuration getConfiguration() {
-        return mConfiguration;
+    public int getCurrentLine() {
+        return hasLayout() ? getLayout().getLineForOffset(getSelectionStart()) : 0;
     }
 
-    public Language getLanguage() {
-        return mLanguage;
+    public int getTopLine() {
+        return hasLayout() ? getLayout().getLineForVertical(mScrollY) : 0;
+    }
+
+    public int getBottomLine() {
+        return hasLayout() ? getLayout().getLineForVertical(mScrollY + mHeight) : 0;
     }
 
     public void cut() {
@@ -821,25 +766,25 @@ public class TextArea extends AppCompatMultiAutoCompleteTextView implements Scro
         onTextContextMenuItem(android.R.id.replaceText);
     }
 
-    public void cursorMoveUp() {
+    public void caretMoveUp() {
         if (hasLayout()) {
             Selection.moveUp(getText(), getLayout());
         }
     }
 
-    public void cursorMoveDown() {
+    public void caretMoveDown() {
         if (hasLayout()) {
             Selection.moveDown(getText(), getLayout());
         }
     }
 
-    public void cursorMoveLeft() {
+    public void caretMoveLeft() {
         if (hasLayout()) {
             Selection.moveLeft(getText(), getLayout());
         }
     }
 
-    public void cursorMoveRight() {
+    public void caretMoveRight() {
         if (hasLayout()) {
             Selection.moveRight(getText(), getLayout());
         }
@@ -850,7 +795,7 @@ public class TextArea extends AppCompatMultiAutoCompleteTextView implements Scro
             mFormatTask.cancel(true);
         }
 
-        mFormatTask = new FormatTask(this, (text) -> {
+        mFormatTask = new FormatTask(mEditor, (text) -> {
             TextBuffer.setText(getText(), text);
         });
 
@@ -860,19 +805,18 @@ public class TextArea extends AppCompatMultiAutoCompleteTextView implements Scro
     @Override
     public void setTextSize(float size) {
         super.setTextSize(size);
+        // Need update the text size of SuggestionAdapter's TextView
         mSuggestionAdapter.setTextSize(size);
+
+        // Need to update the syntax because the visible area was changed.
+        post(this::updateSpan);
     }
 
-    @Override
-    public void setText(CharSequence text, BufferType type) {
-        super.setText(text, type);
+    public void setOnSelectionChangedListener(@Nullable OnSelectionChangedListener l) {
+        mSelectionChangedListener = l;
     }
 
-    public void addTextAreaListener(EditorTextAreaListener l) {
-        mTextAreaListeners.add(l);
-    }
-
-    public void removeTextAreaListener(EditorTextAreaListener l) {
-        mTextAreaListeners.remove(l);
+    public interface OnSelectionChangedListener {
+        void onSelectionChanged(int start, int end);
     }
 }

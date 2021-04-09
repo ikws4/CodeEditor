@@ -21,25 +21,6 @@
 
     </com.google.android.material.appbar.AppBarLayout>
 
-<!--    <io.ikws4.codeeditor.component.TextArea-->
-<!--        android:id="@+id/editor"-->
-<!--        android:layout_width="match_parent"-->
-<!--        android:layout_height="0dp"-->
-<!--        android:layout_weight="1"-->
-<!--        android:dropDownWidth="196dp"-->
-<!--        android:dropDownHeight="120dp"-->
-<!--        android:importantForAutofill="no"-->
-<!--        android:padding="0dp"-->
-<!--        android:popupElevation="1dp"-->
-<!--        android:scrollbars="none"-->
-<!--        android:textSelectHandle="@drawable/empty_text_select_handle"-->
-<!--        android:textCursorDrawable="@drawable/editor_cursor" />-->
-
-<!--    <io.ikws4.codeeditor.component.Toolbar-->
-<!--        android:id="@+id/keyboard_bar"-->
-<!--        android:layout_width="match_parent"-->
-<!--        android:layout_height="wrap_content"-->
-<!--        android:visibility="visible" />-->
     <io.ikws4.codeeditor.CodeEditor
         android:id="@+id/code_editor"
         android:layout_width="match_parent"
