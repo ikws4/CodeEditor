@@ -42,7 +42,9 @@ public class Document extends SpannableStringBuilder {
             addMarkups(start, end);
         } else {
             if (start >= mStart) {
-                removeMarkups(mStart, start);
+                if (start != 0) {
+                    removeMarkups(mStart, start);
+                }
                 addMarkups(mEnd, end);
             } else {
                 addMarkups(start, mStart);
