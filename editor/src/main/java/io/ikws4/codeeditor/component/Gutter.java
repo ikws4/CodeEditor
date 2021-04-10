@@ -71,10 +71,7 @@ public class Gutter extends View implements Component, VisibleAreaListener, Scal
 
     @Override
     public void onVisibleAreaChanged(Rect rect, Rect oldRect) {
-        if (mScrollY != rect.top) {
-            mScrollY = rect.top;
-            invalidate();
-        }
+        mScrollY = rect.top;
     }
 
     @Override

@@ -3,6 +3,7 @@ package io.ikws4.codeeditor.api.language;
 import java.util.List;
 
 import io.ikws4.codeeditor.api.configuration.SyntaxColorScheme;
+import io.ikws4.codeeditor.api.document.markup.Markup;
 
 public interface LanguageStyler {
 
@@ -12,5 +13,5 @@ public interface LanguageStyler {
 
     String format(String source);
 
-    List<ExtendedSpan> process(String source, SyntaxColorScheme scheme);
+    List<Markup> process(String source, SyntaxColorScheme scheme);
 }

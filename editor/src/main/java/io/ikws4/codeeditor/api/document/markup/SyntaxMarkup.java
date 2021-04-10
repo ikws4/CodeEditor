@@ -1,4 +1,4 @@
-package io.ikws4.codeeditor.span;
+package io.ikws4.codeeditor.api.document.markup;
 
 import android.annotation.SuppressLint;
 import android.graphics.Typeface;
@@ -7,18 +7,16 @@ import android.text.style.CharacterStyle;
 
 import androidx.annotation.ColorInt;
 
-import io.ikws4.codeeditor.api.language.ExtendedSpan;
-
 /**
  * A span that support {@link Typeface} and foreground color
  */
-public class SyntaxSpan extends CharacterStyle implements ExtendedSpan {
+public class SyntaxMarkup extends CharacterStyle implements Markup {
     private final int mStyle;
     private final int mColor;
     private int mStart;
     private int mEnd;
 
-    public SyntaxSpan(@ColorInt int color, int start, int end) {
+    public SyntaxMarkup(@ColorInt int color, int start, int end) {
         this(Typeface.NORMAL, color, start, end);
     }
 
@@ -28,7 +26,7 @@ public class SyntaxSpan extends CharacterStyle implements ExtendedSpan {
      *              in {@link Typeface}.
      * @param color text color
      */
-    public SyntaxSpan(int style, @ColorInt int color, int start, int end) {
+    public SyntaxMarkup(int style, @ColorInt int color, int start, int end) {
         mStyle = style;
         mColor = color;
         mStart = start;

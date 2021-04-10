@@ -1,5 +1,5 @@
 package io.ikws4.codeeditor.task;
 
-public interface OnTaskFinishedListener<T> {
+public interface TaskFinishedListener<T> {
     void onFinished(T data);
 }

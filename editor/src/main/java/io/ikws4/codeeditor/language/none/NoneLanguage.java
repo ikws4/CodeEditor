@@ -4,8 +4,7 @@ import java.util.Collections;
 import java.util.List;
 
 import io.ikws4.codeeditor.api.configuration.SyntaxColorScheme;
-import io.ikws4.codeeditor.api.language.ExtendedSpan;
-import io.ikws4.codeeditor.span.SyntaxSpan;
+import io.ikws4.codeeditor.api.document.markup.Markup;
 import io.ikws4.codeeditor.api.language.Language;
 import io.ikws4.codeeditor.api.language.LanguageParser;
 import io.ikws4.codeeditor.api.language.LanguageStyler;
@@ -75,7 +74,7 @@ public class NoneLanguage implements Language {
             }
 
             @Override
-            public List<ExtendedSpan> process(String source, SyntaxColorScheme scheme) {
+            public List<Markup> process(String source, SyntaxColorScheme scheme) {
                 return Collections.emptyList();
             }
         };

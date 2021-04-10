@@ -14,6 +14,7 @@ import android.text.TextWatcher;
 import android.text.method.ArrowKeyMovementMethod;
 import android.text.method.Touch;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.util.TypedValue;
 import android.view.ActionMode;
 import android.view.Gravity;
@@ -34,46 +35,38 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.widget.AppCompatMultiAutoCompleteTextView;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import io.ikws4.codeeditor.R;
 import io.ikws4.codeeditor.api.configuration.ColorScheme;
+import io.ikws4.codeeditor.api.document.Document;
 import io.ikws4.codeeditor.api.editor.Editor;
 import io.ikws4.codeeditor.api.editor.component.Component;
 import io.ikws4.codeeditor.api.editor.listener.ScaleListener;
 import io.ikws4.codeeditor.api.editor.listener.VisibleAreaListener;
-import io.ikws4.codeeditor.api.language.ExtendedSpan;
 import io.ikws4.codeeditor.api.language.Suggestion;
 import io.ikws4.codeeditor.language.TSLanguageStyler;
-import io.ikws4.codeeditor.span.ReplacedSpan;
-import io.ikws4.codeeditor.span.TabSpan;
+import io.ikws4.codeeditor.api.document.markup.ReplacedMarkup;
+import io.ikws4.codeeditor.api.document.markup.TabMarkup;
 import io.ikws4.codeeditor.task.FormatTask;
-import io.ikws4.codeeditor.task.ParsingSpanTask;
-import io.ikws4.codeeditor.util.TextBuffer;
+import io.ikws4.codeeditor.task.ParsingMarkupTask;
 
 public class TextArea extends AppCompatMultiAutoCompleteTextView implements Component, VisibleAreaListener, ScaleListener {// load jsitter for syntax highlight and indent.
     private Editor mEditor;
+    private Component mToolbar;
+    private Component mGutter;
 
     private int mScrollX = 0;
     private int mScrollY = 0;
     private int mWidth = 0;
     private int mHeight = 0;
 
-    private OnSelectionChangedListener mSelectionChangedListener;
-
     private final Paint mCursorLinePaint = new Paint();
 
-    private FormatTask mFormatTask;
+    private OnSelectionChangedListener mSelectionChangedListener;
 
-    // Span
-    private ParsingSpanTask mParsingSpanTask;
-    private final List<ExtendedSpan> mSpans;
-    private boolean isUpdatingSpan = false;
-    private int mTopLineStart;
-    private int mTopLineEnd;
-    private int mBottomLineStart;
-    private int mBottomLineEnd;
+    private ParsingMarkupTask mParsingMarkupTask;
+    private FormatTask mFormatTask;
 
     // Completion menu
     private final SuggestionAdapter mSuggestionAdapter;
@@ -90,14 +83,16 @@ public class TextArea extends AppCompatMultiAutoCompleteTextView implements Comp
 
     public TextArea(@NonNull Context context, @Nullable AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
-        mSpans = new ArrayList<>();
         mSuggestionAdapter = new SuggestionAdapter(context);
         mWordTokenizer = new WordTokenizer();
+
     }
 
     @Override
     public void attach(Editor editor) {
         mEditor = editor;
+        mToolbar = editor.findComponentById(R.id.toolbar);
+        mGutter = editor.findComponentById(R.id.gutter);
 
         editor.getScacleModel().addScaleListener(this);
         editor.getScrollingModel().addVisibleAreaListener(this);
@@ -118,22 +113,28 @@ public class TextArea extends AppCompatMultiAutoCompleteTextView implements Comp
 
     @Override
     public void onVisibleAreaChanged(Rect rect, Rect oldRect) {
-        if (rect.width() != mWidth || rect.height() != mHeight) {
-            mWidth = rect.width();
-            mHeight = rect.height();
+        int scrollY = rect.top;
+        int scrollX = rect.left + mGutter.getComponentWidth();
+        int width = rect.width() - mGutter.getComponentWidth();
+        int height = rect.height() - mToolbar.getComponentHeight();
 
-            updateSpan();
-        }
-
-        if (rect.top != mScrollY || rect.right != mScrollX) {
+        if (scrollY != mScrollY || scrollX != mScrollX) {
             // notify EditText scroll changed.
-            super.onScrollChanged(rect.left, rect.top, oldRect.left, oldRect.top);
+            super.onScrollChanged(scrollX, scrollY, mScrollX, mScrollY);
 
-            mScrollX = rect.left;
-            mScrollY = rect.top;
+            mScrollX = scrollX;
+            mScrollY = scrollY;
 
-            updateSpanWhenScroll();
+            updateMarkup(true);
         }
+
+        if (width != mWidth || height != mHeight) {
+            mWidth = width;
+            mHeight = height;
+
+            updateMarkup(false);
+        }
+
     }
 
     @Override
@@ -183,6 +184,9 @@ public class TextArea extends AppCompatMultiAutoCompleteTextView implements Comp
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             setTextClassifier(TextClassifier.NO_OP);
         }
+
+        // docuemnt
+        setEditableFactory(Document.Factory.getInstance());
 
         // Wrap
         setHorizontallyScrolling(!mEditor.getConfiguration().isWrap());
@@ -267,26 +271,24 @@ public class TextArea extends AppCompatMultiAutoCompleteTextView implements Comp
     }
 
     private class HighlightUpdateWatcher implements TextWatcher {
-        private int addedTextCount = 0;
+        private int mOffset = 0;
 
         @Override
         public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-            addedTextCount -= count;
-            stopParsingSpan();
+            mOffset -= count;
+            stopParsingMarkup();
         }
 
         @Override
         public void onTextChanged(CharSequence s, int start, int before, int count) {
-            addedTextCount += count;
+            mOffset += count;
         }
 
         @Override
         public void afterTextChanged(Editable s) {
-            if (!isUpdatingSpan) {
-                TextBuffer.shiftSpans(mSpans, getSelectionStart(), addedTextCount);
-            }
-            startParsingSpan();
-            addedTextCount = 0;
+            mEditor.getDocument().notifyTextChanged(getSelectionStart(), mOffset);
+            startParsingMarkup();
+            mOffset = 0;
         }
     }
 
@@ -294,7 +296,7 @@ public class TextArea extends AppCompatMultiAutoCompleteTextView implements Comp
     ///////////////////////////////////////////////////////////////////////////
     // ActionMode callback
     ///////////////////////////////////////////////////////////////////////////
-    private static class InsertionActionModeCallback implements ActionMode.Callback {
+    private class InsertionActionModeCallback implements ActionMode.Callback {
         @Override
         public boolean onCreateActionMode(ActionMode mode, Menu menu) {
             return true;
@@ -305,12 +307,19 @@ public class TextArea extends AppCompatMultiAutoCompleteTextView implements Comp
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 menu.removeItem(android.R.id.autofill);
             }
+            menu.removeItem(android.R.id.shareText);
+            menu.removeItem(android.R.id.pasteAsPlainText);
             return true;
         }
 
         @Override
         public boolean onActionItemClicked(ActionMode mode, MenuItem item) {
-            return false;
+            if (item.getItemId() == android.R.id.paste) {
+                onTextContextMenuItem(android.R.id.pasteAsPlainText);
+                return true;
+            } else {
+                return false;
+            }
         }
 
         @Override
@@ -319,7 +328,7 @@ public class TextArea extends AppCompatMultiAutoCompleteTextView implements Comp
         }
     }
 
-    private static class SelectionActiomModeCallback implements ActionMode.Callback {
+    private class SelectionActiomModeCallback implements ActionMode.Callback {
         @Override
         public boolean onCreateActionMode(ActionMode mode, Menu menu) {
             return true;
@@ -327,13 +336,22 @@ public class TextArea extends AppCompatMultiAutoCompleteTextView implements Comp
 
         @Override
         public boolean onPrepareActionMode(ActionMode mode, Menu menu) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                menu.removeItem(android.R.id.autofill);
+            }
             menu.removeItem(android.R.id.shareText);
+            menu.removeItem(android.R.id.pasteAsPlainText);
             return true;
         }
 
         @Override
         public boolean onActionItemClicked(ActionMode mode, MenuItem item) {
-            return false;
+            if (item.getItemId() == android.R.id.paste) {
+                onTextContextMenuItem(android.R.id.pasteAsPlainText);
+                return true;
+            } else {
+                return false;
+            }
         }
 
         @Override
@@ -377,7 +395,7 @@ public class TextArea extends AppCompatMultiAutoCompleteTextView implements Comp
             Editable content = textArea.getText();
             int start = textArea.getSelectionStart();
             if (keyCode == KeyEvent.KEYCODE_DEL && (event.hasNoModifiers() || event.hasModifiers(KeyEvent.META_ALT_ON))) {
-                ReplacedSpan[] repl = content.getSpans(start - 1, start, ReplacedSpan.class);
+                ReplacedMarkup[] repl = content.getSpans(start - 1, start, ReplacedMarkup.class);
                 if (repl.length > 0) {
                     int st = content.getSpanStart(repl[0]);
                     int en = content.getSpanEnd(repl[0]);
@@ -477,8 +495,7 @@ public class TextArea extends AppCompatMultiAutoCompleteTextView implements Comp
             mEditor.getScrollingModel().scrollBy(0, deltaY - mHeight + getLineHeight());
         }
 
-        // FIXME: completion menu horizontal gap not working well, need fix
-        if (deltaX > mWidth - getDropDownWidth()) {
+        if (deltaX + getDropDownWidth() > mWidth) {
             mEditor.getScrollingModel().scrollBy(x + getDropDownWidth(), 0);
         }
 
@@ -592,89 +609,34 @@ public class TextArea extends AppCompatMultiAutoCompleteTextView implements Comp
     ///////////////////////////////////////////////////////////////////////////
     // Span
     ///////////////////////////////////////////////////////////////////////////
-    private void startParsingSpan() {
-        stopParsingSpan();
+    private void startParsingMarkup() {
+        stopParsingMarkup();
 
-        mParsingSpanTask = new ParsingSpanTask(mEditor, spans -> {
-            mSpans.clear();
-            mSpans.addAll(spans);
-            updateSpan();
+        mParsingMarkupTask = new ParsingMarkupTask(mEditor, spans -> {
+            mEditor.getDocument().setMarkupSource(spans);
+            updateMarkup(false);
         });
 
-        mParsingSpanTask.execute();
+        mParsingMarkupTask.execute();
     }
 
-    private void stopParsingSpan() {
-        if (mParsingSpanTask != null) {
-            mParsingSpanTask.cancel(true);
+    private void stopParsingMarkup() {
+        if (mParsingMarkupTask != null) {
+            mParsingMarkupTask.cancel(true);
         }
     }
 
     /**
-     * Update the span on the current visiable area.
+     * @param isScrolling If true, update span only the top up bottom part, when scroll changed,
+     * this can reduce the update area and imporve the span speed. Otherwise update the whole visible area.
      */
-    private void updateSpan() {
+    private void updateMarkup(boolean isScrolling) {
         if (!hasLayout()) return;
-
         int top = getTopLine();
         int bottom = getBottomLine();
-
-        updateSpan(getLayout().getLineStart(top), getLayout().getLineEnd(bottom));
-    }
-
-    /**
-     * Update the span by give a range (start, end).
-     */
-    private void updateSpan(int start, int end) {
-        if (!hasLayout() || isUpdatingSpan) return;
-
-        isUpdatingSpan = true;
-
-        TextBuffer.cleanSpans(getText(), start, end);
-        TextBuffer.addSpans(getText(), mSpans, start, end);
-
-        isUpdatingSpan = false;
-    }
-
-    /**
-     * Update span only the top up bottom part, when scroll changed,
-     * this can reduce the update area and imporve the span speed.
-     * if you need update the cureen visiable screen span see {@link #updateSpan()}
-     */
-    private void updateSpanWhenScroll() {
-        if (!hasLayout() || isUpdatingSpan) return;
-
-        isUpdatingSpan = true;
-
-        int topVisiableLine = Math.max(0, getTopLine() - 1);
-        int bottomVisiableLine = getBottomLine();
-
-        int topVisiableLineStart = getLayout().getLineStart(topVisiableLine);
-        int topVisiableLineEnd = getLayout().getLineEnd(topVisiableLine);
-        int bottomVisiableLineStart = getLayout().getLineStart(bottomVisiableLine);
-        int bottomVisiableLineEnd = getLayout().getLineEnd(bottomVisiableLine);
-
-        Editable text = getText();
-
-        // scroll down
-        if (topVisiableLineStart >= mTopLineStart) {
-            if (topVisiableLine != 0) {
-                TextBuffer.cleanSpans(text, Math.min(mTopLineStart, topVisiableLineStart), Math.max(mTopLineEnd, topVisiableLineEnd));
-            }
-            TextBuffer.addSpans(text, mSpans, Math.min(mBottomLineStart, bottomVisiableLineStart), Math.max(mBottomLineEnd, bottomVisiableLineEnd));
-        } else {
-            if (bottomVisiableLine != getLineCount() - 1) {
-                TextBuffer.cleanSpans(text, Math.min(mBottomLineStart, bottomVisiableLineStart), Math.max(mBottomLineEnd, bottomVisiableLineEnd));
-            }
-            TextBuffer.addSpans(text, mSpans, Math.min(mTopLineStart, topVisiableLineStart), Math.max(mTopLineEnd, topVisiableLineEnd));
-        }
-
-        mTopLineStart = topVisiableLineStart;
-        mTopLineEnd = topVisiableLineEnd;
-        mBottomLineStart = bottomVisiableLineStart;
-        mBottomLineEnd = bottomVisiableLineEnd;
-
-        isUpdatingSpan = false;
+        int start = getLayout().getLineStart(top);
+        int end = getLayout().getLineEnd(bottom);
+        mEditor.getDocument().notifyVisibleRangeChanged(start, end, !isScrolling);
     }
 
     ///////////////////////////////////////////////////////////////////////////
@@ -693,7 +655,7 @@ public class TextArea extends AppCompatMultiAutoCompleteTextView implements Comp
 
         int start = getLayout().getLineStart(line);
         content.insert(start, tab);
-        TextBuffer.setSpan(content, new TabSpan(tab, mEditor.getColorScheme().getIndentColor(), start, getSelectionEnd()));
+        mEditor.getDocument().setMarkup(new TabMarkup(tab, mEditor.getColorScheme().getIndentColor(), start, getSelectionEnd()));
     }
 
     /**
@@ -795,9 +757,7 @@ public class TextArea extends AppCompatMultiAutoCompleteTextView implements Comp
             mFormatTask.cancel(true);
         }
 
-        mFormatTask = new FormatTask(mEditor, (text) -> {
-            TextBuffer.setText(getText(), text);
-        });
+        mFormatTask = new FormatTask(mEditor, this::setText);
 
         mFormatTask.execute();
     }
@@ -809,7 +769,7 @@ public class TextArea extends AppCompatMultiAutoCompleteTextView implements Comp
         mSuggestionAdapter.setTextSize(size);
 
         // Need to update the syntax because the visible area was changed.
-        post(this::updateSpan);
+        post(() -> updateMarkup(false));
     }
 
     public void setOnSelectionChangedListener(@Nullable OnSelectionChangedListener l) {

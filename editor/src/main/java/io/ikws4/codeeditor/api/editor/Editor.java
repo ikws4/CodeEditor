@@ -1,14 +1,23 @@
 package io.ikws4.codeeditor.api.editor;
 
+import androidx.annotation.IdRes;
+import androidx.annotation.IntegerRes;
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+
+import java.nio.charset.Charset;
+
+import javax.annotation.Nonnull;
 
 import io.ikws4.codeeditor.api.configuration.ColorScheme;
+import io.ikws4.codeeditor.api.document.Document;
+import io.ikws4.codeeditor.api.editor.component.Component;
 import io.ikws4.codeeditor.api.language.Language;
 import io.ikws4.codeeditor.configuration.Configuration;
 
 public interface Editor {
     @NonNull
-    CharSequence getText();
+    Document getDocument();
 
     @NonNull
     Configuration getConfiguration();
@@ -18,6 +27,9 @@ public interface Editor {
 
     @NonNull
     Language getLanguage();
+
+    @Nonnull
+    Component findComponentById(@IdRes int id);
 
     /**
      * Returns the value indicating whether the editor operates in viewer mode, with

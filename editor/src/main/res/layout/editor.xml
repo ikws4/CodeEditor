@@ -40,7 +40,7 @@
                     android:paddingTop="0dp"
                     android:paddingRight="120dp"
                     android:paddingBottom="128dp"
-                    android:popupElevation="1dp"
+                    android:popupElevation="0dp"
                     android:scrollbars="none"
                     android:textCursorDrawable="@drawable/cursor" />
 

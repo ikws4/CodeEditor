@@ -1,20 +1,19 @@
-package io.ikws4.codeeditor.span;
+package io.ikws4.codeeditor.api.document.markup;
 
 import android.text.NoCopySpan;
 import android.view.KeyEvent;
 
 import io.ikws4.codeeditor.component.TextArea;
-import io.ikws4.codeeditor.api.language.ExtendedSpan;
 
 /**
  * It will be handle in {@link EditorBaseKeyListener#handleReplacedSpan(TextArea, int, KeyEvent)}
  */
-public class ReplacedSpan implements NoCopySpan, ExtendedSpan {
+public class ReplacedMarkup implements NoCopySpan, Markup {
     private final char[] mText;
     private int mStart;
     private int mEnd;
 
-    public ReplacedSpan(char[] text, int start, int end) {
+    public ReplacedMarkup(char[] text, int start, int end) {
         mText = text;
         mStart = start;
         mEnd = end;

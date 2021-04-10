@@ -17,11 +17,14 @@ import android.widget.FrameLayout;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import com.google.googlejavaformat.Doc;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
 import io.ikws4.codeeditor.api.configuration.ColorScheme;
+import io.ikws4.codeeditor.api.document.Document;
 import io.ikws4.codeeditor.api.editor.Editor;
 import io.ikws4.codeeditor.api.editor.LayoutModel;
 import io.ikws4.codeeditor.api.editor.ScaleModel;
@@ -204,6 +207,12 @@ public class CodeEditor extends FrameLayout implements Editor, ScaleGestureDetec
     }
 
     @NonNull
+    @Override
+    public Document getDocument() {
+        return (Document) mTextArea.getText();
+    }
+
+    @NonNull
     public Configuration getConfiguration() {
         return mConfiguration;
     }
@@ -222,6 +231,14 @@ public class CodeEditor extends FrameLayout implements Editor, ScaleGestureDetec
     @NonNull
     public Language getLanguage() {
         return mLanguage;
+    }
+
+    @NonNull
+    @Override
+    public Component findComponentById(int id) {
+        Component component = findViewById(id);
+        Objects.requireNonNull(component, "Component not found, id: " + id);
+        return component;
     }
 
     @Override
@@ -471,11 +488,8 @@ public class CodeEditor extends FrameLayout implements Editor, ScaleGestureDetec
         mTextArea.format();
     }
 
-    public void setText(String text) {
-        mTextArea.setText(text);
-    }
-
-    public CharSequence getText() {
-        return mTextArea.getText();
+    public void setDocument(@NonNull Document document) {
+        Objects.requireNonNull(document);
+        mTextArea.setText(document);
     }
 }

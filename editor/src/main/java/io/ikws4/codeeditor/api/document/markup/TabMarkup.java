@@ -1,4 +1,4 @@
-package io.ikws4.codeeditor.span;
+package io.ikws4.codeeditor.api.document.markup;
 
 import android.graphics.Canvas;
 import android.graphics.Paint;
@@ -8,12 +8,12 @@ import android.text.style.LeadingMarginSpan;
 
 import androidx.annotation.ColorInt;
 
-public class TabSpan extends ReplacedSpan implements LeadingMarginSpan {
+public class TabMarkup extends ReplacedMarkup implements LeadingMarginSpan {
     private final String mTab;
     private final int mColor;
     private float[] mPoints;
 
-    public TabSpan(String tab, @ColorInt int color, int start, int end) {
+    public TabMarkup(String tab, @ColorInt int color, int start, int end) {
         super(new char[0], start, end);
         mTab = tab;
         mColor = color;
