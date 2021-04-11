@@ -3,7 +3,6 @@ package io.ikws4.codeeditor.api.document;
 import android.text.Editable;
 import android.text.Spannable;
 import android.text.SpannableStringBuilder;
-import android.util.Log;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -21,13 +20,13 @@ public class Document extends SpannableStringBuilder {
         mMarkups = new ArrayList<>();
     }
 
-    public  void setMarkupSource(List<Markup> spans) {
+    public  void setMarkupSource(List<Markup> markups) {
         mMarkups.clear();
-        mMarkups.addAll(spans);
+        mMarkups.addAll(markups);
     }
 
-    public void setMarkup(Markup span) {
-        setSpan(span, span.getStart(), span.getEnd(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+    public void setMarkup(Markup markup) {
+        setSpan(markup, markup.getStart(), markup.getEnd(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
     }
 
     /**
@@ -65,37 +64,37 @@ public class Document extends SpannableStringBuilder {
     }
 
     /**
-     * Shift spans by given start and offset.
+     * Shift markups by given start and offset.
      */
     private void shiftMarkups(int start, int offset) {
-        for (int i = markupIndexAt(start); i < mMarkups.size(); i++) {
+        for (int i = getMarkupIndex(start); i < mMarkups.size(); i++) {
             mMarkups.get(i).shift(offset);
         }
     }
 
     /**
-     * Remove span by given range (start, end)
+     * Remove markups by given range (start, end)
      */
     private void removeMarkups(int start, int end) {
-        Markup[] spans = getSpans(start, end, Markup.class);
-        for (Markup span : spans) {
-            removeSpan(span);
+        Markup[] markups = getSpans(start, end, Markup.class);
+        for (Markup markup : markups) {
+            removeSpan(markup);
         }
     }
 
     /**
-     * Add span by given range (start, end)
+     * Add markups by given range (start, end)
      */
     private void addMarkups(int start, int end) {
-        int startIndex = markupIndexAt(start);
-        int endIndex = Math.min(mMarkups.size() - 1, markupIndexAt(end));
+        int startIndex = getMarkupIndex(start);
+        int endIndex = Math.min(mMarkups.size() - 1, getMarkupIndex(end));
         for (int i = startIndex; i <= endIndex; i++) {
-            Markup span = mMarkups.get(i);
-            setMarkup(span);
+            Markup markup = mMarkups.get(i);
+            setMarkup(markup);
         }
     }
 
-    private int markupIndexAt(int start) {
+    private int getMarkupIndex(int start) {
         int l = 0, r = mMarkups.size(), m;
         while (l < r) {
             m = l + (r - l) / 2;

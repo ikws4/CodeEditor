@@ -5,9 +5,6 @@ import android.view.KeyEvent;
 
 import io.ikws4.codeeditor.component.TextArea;
 
-/**
- * It will be handle in {@link EditorBaseKeyListener#handleReplacedSpan(TextArea, int, KeyEvent)}
- */
 public class ReplacedMarkup implements NoCopySpan, Markup {
     private final char[] mText;
     private int mStart;

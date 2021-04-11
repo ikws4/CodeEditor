@@ -8,7 +8,7 @@ import android.text.style.CharacterStyle;
 import androidx.annotation.ColorInt;
 
 /**
- * A span that support {@link Typeface} and foreground color
+ * A markup that support {@link Typeface} and foreground color
  */
 public class SyntaxMarkup extends CharacterStyle implements Markup {
     private final int mStyle;

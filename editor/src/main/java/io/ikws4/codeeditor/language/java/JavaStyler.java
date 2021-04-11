@@ -45,7 +45,7 @@ class JavaStyler extends TSLanguageStyler {
     }
 
     @Override
-    protected Markup onBuildSpan(TSHighlightType type, int start, int end, SyntaxColorScheme scheme) {
+    protected Markup onBuildMarkup(TSHighlightType type, int start, int end, SyntaxColorScheme scheme) {
         switch (type) {
             case Attribute:
                 return new SyntaxMarkup(scheme.getAnnotationColor(), start, end);

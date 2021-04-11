@@ -1,5 +1,7 @@
 package io.ikws4.codeeditor.language;
 
+import androidx.annotation.Nullable;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -175,19 +177,20 @@ public abstract class TSLanguageStyler implements LanguageStyler {
 
     @Override
     public List<Markup> process(String source, SyntaxColorScheme scheme) {
-        List<Markup> spans = new ArrayList<>();
+        List<Markup> markups = new ArrayList<>();
         parse(source);
 
         for (TSQueryCapture capture : mHighlightQuery.captureIter(mTree.getRoot())) {
             TSNode node = capture.getNode();
-            Markup span = onBuildSpan(hlmap.get(capture.getName()), node.getStartByte(), node.getEndByte(), scheme);
-            if (span != null) spans.add(span);
+            Markup markup = onBuildMarkup(hlmap.get(capture.getName()), node.getStartByte(), node.getEndByte(), scheme);
+            if (markup != null) markups.add(markup);
         }
 
-        return spans;
+        return markups;
     }
 
-    protected abstract Markup onBuildSpan(TSHighlightType type, int start, int end, SyntaxColorScheme scheme);
+    @Nullable
+    protected abstract Markup onBuildMarkup(TSHighlightType type, int start, int end, SyntaxColorScheme scheme);
 
     private void parse(String source) {
         synchronized (this) {
