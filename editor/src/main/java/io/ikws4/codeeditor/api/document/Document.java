@@ -4,13 +4,16 @@ import android.text.Editable;
 import android.text.Spannable;
 import android.text.SpannableStringBuilder;
 
+import androidx.annotation.NonNull;
+
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 import io.ikws4.codeeditor.api.document.markup.Markup;
 
 public class Document extends SpannableStringBuilder {
-    private final List<Markup> mMarkups;
+    private List<Markup> mMarkups;
     private boolean mUpdating = false;
     private int mStart;
     private int mEnd;
@@ -20,9 +23,10 @@ public class Document extends SpannableStringBuilder {
         mMarkups = new ArrayList<>();
     }
 
-    public  void setMarkupSource(List<Markup> markups) {
-        mMarkups.clear();
-        mMarkups.addAll(markups);
+    public  void setMarkupSource(@NonNull List<Markup> markups) {
+        Objects.requireNonNull(markups);
+        mMarkups = markups;
+        notifyVisibleRangeChanged(mStart, mEnd, true);
     }
 
     public void setMarkup(Markup markup) {
