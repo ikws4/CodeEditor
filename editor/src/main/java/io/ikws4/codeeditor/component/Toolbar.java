@@ -37,7 +37,7 @@ public class Toolbar extends FrameLayout implements Component, VisibleAreaListen
     }
 
     @Override
-    public void attach(Editor editor) {
+    public void onAttachEditor(Editor editor) {
         setBackgroundColor(editor.getColorScheme().getBackgroundColor());
 
         KeyButton tab = findViewById(R.id.tab);

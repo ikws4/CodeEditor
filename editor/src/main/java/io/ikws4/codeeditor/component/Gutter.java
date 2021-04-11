@@ -37,7 +37,7 @@ public class Gutter extends View implements Component, VisibleAreaListener, Scal
     }
 
     @Override
-    public void attach(Editor editor) {
+    public void onAttachEditor(Editor editor) {
         mEditor = editor;
 
         ColorScheme colorScheme = editor.getConfiguration().getColorScheme();

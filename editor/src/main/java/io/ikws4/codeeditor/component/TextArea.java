@@ -89,7 +89,7 @@ public class TextArea extends AppCompatMultiAutoCompleteTextView implements Comp
     }
 
     @Override
-    public void attach(Editor editor) {
+    public void onAttachEditor(Editor editor) {
         mEditor = editor;
         mToolbar = editor.findComponentById(R.id.toolbar);
         mGutter = editor.findComponentById(R.id.gutter);

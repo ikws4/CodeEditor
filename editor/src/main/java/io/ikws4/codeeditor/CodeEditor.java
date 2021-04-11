@@ -17,8 +17,6 @@ import android.widget.FrameLayout;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
-import com.google.googlejavaformat.Doc;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -152,7 +150,7 @@ public class CodeEditor extends FrameLayout implements Editor, ScaleGestureDetec
 
     private void addComponent(Component component) {
         Objects.requireNonNull(component);
-        component.attach(this);
+        component.onAttachEditor(this);
     }
 
     private void notifyVisibleAreaChanged() {
