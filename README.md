@@ -1,4 +1,4 @@
-# Get Starte
+# Get start
 ```bash
 git clone --recursive https://github.com/ikws4/CodeEditor.git
 ```
